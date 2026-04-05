@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="SpecChat.Language.Tests/SpecChat.Language.Tests.csproj" />
+  <Project Path="SpecChat.Language/SpecChat.Language.csproj" />
+  <Project Path="SpecChat.Mcp.Tests/SpecChat.Mcp.Tests.csproj" />
+  <Project Path="SpecChat.Mcp/SpecChat.Mcp.csproj" />
+</Solution>
