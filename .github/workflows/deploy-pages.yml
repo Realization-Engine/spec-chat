@@ -1,0 +1,122 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pandoc
+        run: sudo apt-get install -y pandoc
+
+      - name: Create mermaid Lua filter
+        run: |
+          cat > /tmp/mermaid.lua << 'LUAEOF'
+          function CodeBlock(block)
+            if block.classes[1] == "mermaid" then
+              return pandoc.RawBlock("html",
+                '<pre class="mermaid">\n' .. block.text .. '\n</pre>')
+            end
+          end
+          LUAEOF
+
+      - name: Build site
+        run: |
+          mkdir -p site/docs site/css site/lib/katex/fonts
+
+          # Copy static assets
+          cp static/css/docs.css site/css/
+          cp static/lib/katex/katex.min.css site/lib/katex/
+          cp static/lib/katex/katex.min.js site/lib/katex/
+          cp static/lib/katex/fonts/*.woff2 site/lib/katex/fonts/
+
+          # Convert docs to HTML
+          for md in Docs/*.md; do
+            filename=$(basename "$md" .md)
+            pandoc "$md" \
+              --standalone \
+              --metadata title="" \
+              --css "../css/docs.css" \
+              --css "../lib/katex/katex.min.css" \
+              --katex="../lib/katex/" \
+              --lua-filter=/tmp/mermaid.lua \
+              --variable header-includes='<script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";mermaid.initialize({startOnLoad:true});</script>' \
+              -o "site/docs/${filename}.html"
+          done
+
+          # Add .nojekyll
+          touch site/.nojekyll
+
+      - name: Create docs index page
+        run: |
+          cat > site/docs/index.html << 'HTMLEOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <title>SpecChat Documentation</title>
+            <link rel="stylesheet" href="../css/docs.css" />
+          </head>
+          <body>
+            <h1>SpecChat Documentation</h1>
+            <ul class="doc-list">
+              <li>
+                <a href="Enquiry-Into-Specification-as-Meaningful-Struggle.html">Enquiry Into Specification as Meaningful Struggle</a>
+                <p>Why specification is the site where durable human capability must now be built, and what the specification medium must carry.</p>
+              </li>
+              <li>
+                <a href="Enquiry-Into-Specification-as-Meaningful-Struggle_Citations.html">Citations and References</a>
+                <p>Supporting citations for the Enquiry.</p>
+              </li>
+            </ul>
+            <a class="back-link" href="https://github.com/dlandi/spec-chat">Back to Repository</a>
+          </body>
+          </html>
+          HTMLEOF
+
+      - name: Create root redirect
+        run: |
+          cat > site/index.html << 'HTMLEOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8" />
+            <meta http-equiv="refresh" content="0;url=docs/" />
+            <title>SpecChat</title>
+          </head>
+          <body>
+            <p>Redirecting to <a href="docs/">documentation</a>.</p>
+          </body>
+          </html>
+          HTMLEOF
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
