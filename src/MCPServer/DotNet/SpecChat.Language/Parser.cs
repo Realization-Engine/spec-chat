@@ -83,8 +83,16 @@ public sealed class Parser
     /// Skip tokens until we find a likely recovery point (closing brace at depth,
     /// semicolon, or a top-level keyword).
     /// </summary>
+    /// <summary>
+    /// Skip tokens until we find a likely recovery point. Guarantees
+    /// at least one token is consumed to prevent infinite loops in
+    /// body-parsing while loops.
+    /// </summary>
     private void Synchronize()
     {
+        // Always advance at least once to guarantee progress.
+        if (!IsAtEnd) Advance();
+
         while (!IsAtEnd)
         {
             if (Check(TokenKind.Semicolon)) { Advance(); return; }
@@ -124,7 +132,15 @@ public sealed class Parser
             or TokenKind.KwNew or TokenKind.KwPage or TokenKind.KwHost
             or TokenKind.KwRoute or TokenKind.KwConcepts or TokenKind.KwRole
             or TokenKind.KwCrossLinks or TokenKind.KwVisualization
-            or TokenKind.KwParameters or TokenKind.KwSliders => true,
+            or TokenKind.KwParameters or TokenKind.KwSliders
+            // Additional keywords that appear as parameter names or field names
+            // in real-world specs (not in the grammar's ContextualKeyword list
+            // but needed to prevent parse failures in ParameterBinding positions).
+            or TokenKind.KwSystem or TokenKind.KwDefault or TokenKind.KwRequires
+            or TokenKind.KwProduces or TokenKind.KwExpects
+            or TokenKind.KwTopology or TokenKind.KwDotnet
+            or TokenKind.KwCategory or TokenKind.KwIncludes
+            or TokenKind.KwAllow or TokenKind.KwDeny => true,
         _ => false,
     };
 
