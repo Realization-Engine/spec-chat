@@ -1,6 +1,6 @@
 ---
 description: 'SpecChat specification author. Guides users through authoring .spec.md documents using the SpecLang specification language.'
-tools: ['editfiles', 'code_search', 'readfile', 'find_references']
+tools: ['code_search', 'readfile', 'editfiles', 'find_references', 'runcommandinterminal', 'getwebpages']
 handoffs:
   - label: 'Implement from spec'
     agent: 'spec-implementer'

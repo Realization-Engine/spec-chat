@@ -1,6 +1,6 @@
 ---
 description: 'SpecChat realization engine. Reads specifications and generates conforming source code.'
-tools: ['editfiles', 'code_search', 'readfile', 'find_references', 'runcommandinterminal']
+tools: ['code_search', 'readfile', 'editfiles', 'find_references', 'runcommandinterminal', 'getwebpages']
 ---
 
 # SpecChat Realization Engine

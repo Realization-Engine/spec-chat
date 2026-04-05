@@ -31,7 +31,8 @@
       "Bash(cp templates/copilot/.vscode/mcp.json .vscode/mcp.json)",
       "Bash(cp -r templates/copilot/.github/agents .github/agents)",
       "Bash(cp -r templates/copilot/.github/instructions .github/instructions)",
-      "Bash(cp -r templates/copilot/.github/prompts .github/prompts)"
+      "Bash(cp -r templates/copilot/.github/prompts .github/prompts)",
+      "Bash(timeout 15 dotnet run -- \"E:/Archive/GitHub/dlandi/spec-chat/src/MCPServer/DotNet/Docs/Specs/TodoApp.spec.md\")"
     ]
   }
 }

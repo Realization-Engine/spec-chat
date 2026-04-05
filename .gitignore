@@ -53,3 +53,4 @@ CodeCoverage/
 TestResult.xml
 nunit-*.xml
 /src/MCPServer/DotNet/.vs
+/src/MCPServer/DotNet/Docs/Specs/.vs
