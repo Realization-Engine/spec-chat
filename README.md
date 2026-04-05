@@ -2,6 +2,10 @@
 
 A markdown-embedded specification language where the human authors formal commitments and the LLM operates as a realization engine.
 
+**[Read the published documentation](https://realization-engine.github.io/spec-chat/docs/)**
+
+---
+
 ## The Problem
 
 LLMs are absorbing implementation work. As that happens, the human's value migrates to specification, evaluation, and architecture under ambiguity. But the working medium for specification today is prose documents and chat sessions. Architecture lives in one file, constraints in another, execution rules in a prompt, test obligations in yet another, and the real refinement path only in the author's head. The LLM can often navigate this, but only because the author compensates for the medium's weakness.
