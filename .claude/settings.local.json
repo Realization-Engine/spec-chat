@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:code.visualstudio.com)",
+      "WebFetch(domain:devblogs.microsoft.com)",
+      "WebFetch(domain:csharp.sdk.modelcontextprotocol.io)",
+      "WebFetch(domain:andrewlock.net)",
+      "WebFetch(domain:github.com)",
+      "Bash(dotnet --version)",
+      "Bash(dotnet new:*)",
+      "Bash(dotnet sln:*)",
+      "Bash(ls \"E:/Archive/GitHub/dlandi/spec-chat/src/MCPServer/DotNet/\"*.sln*)",
+      "Bash(dotnet add:*)",
+      "Bash(mkdir -p SpecChat.Language/Ast)",
+      "Bash(mkdir -p SpecChat.Mcp/Tools)",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet test:*)",
+      "Bash(find SpecChat.Language.Tests SpecChat.Mcp.Tests -name \"*.cs\" -exec sed -i 's|Path.Combine\\(dir!, \"\"..\"\", \"\"..\"\", \"\"tests\"\", \"\"fixtures\"\", filename\\)|Path.Combine\\(dir!, \"\"..\"\", \"\"..\"\", \"\"..\"\", \"\"tests\"\", \"\"fixtures\"\", filename\\)|g' {} +)",
+      "Bash(tee /tmp/test-results.txt)",
+      "Bash(taskkill /F /IM testhost.exe)",
+      "Bash(taskkill /F /IM dotnet.exe)",
+      "Bash(taskkill /F /PID 41408)",
+      "Bash(taskkill /F /PID 28868)",
+      "Bash(taskkill /F /PID 59248)",
+      "Bash(tasklist)",
+      "Bash(/tmp/parsetest/parsetest.csproj:*)",
+      "Read(//tmp/**)",
+      "Bash(timeout 30 dotnet run -- \"E:/Archive/GitHub/dlandi/spec-chat/tests/fixtures/blazor-harness.spec.md\")",
+      "Bash(mkdir -p .vscode)",
+      "Bash(cp templates/copilot/.vscode/mcp.json .vscode/mcp.json)",
+      "Bash(cp -r templates/copilot/.github/agents .github/agents)",
+      "Bash(cp -r templates/copilot/.github/instructions .github/instructions)",
+      "Bash(cp -r templates/copilot/.github/prompts .github/prompts)"
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "specchat-mcp": {
+      "type": "stdio",
+      "command": "dotnet",
+      "args": ["run", "--project", "src/MCPServer/DotNet/SpecChat.Mcp/SpecChat.Mcp.csproj"]
+    }
+  }
+}
