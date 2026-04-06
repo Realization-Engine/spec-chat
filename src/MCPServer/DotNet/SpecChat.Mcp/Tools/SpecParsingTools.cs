@@ -101,6 +101,8 @@ public static class SpecParsingTools
             var dotnetSolutions = new List<string>();
             var pages = new List<string>();
             var visualizations = new List<string>();
+            var architectures = new List<string>();
+            var layerContracts = new List<string>();
 
             foreach (var decl in document.Declarations)
             {
@@ -145,6 +147,12 @@ public static class SpecParsingTools
                     case VisualizationDecl v:
                         visualizations.Add(v.Name);
                         break;
+                    case ArchitectureDecl a:
+                        architectures.Add(a.Name);
+                        break;
+                    case LayerContractDecl lc:
+                        layerContracts.Add(lc.Name);
+                        break;
                 }
             }
 
@@ -164,6 +172,8 @@ public static class SpecParsingTools
                 ["dotnetSolutions"] = dotnetSolutions,
                 ["pages"] = pages,
                 ["visualizations"] = visualizations,
+                ["architectures"] = architectures,
+                ["layerContracts"] = layerContracts,
                 ["diagnostics"] = SpecFileHelper.SerializeDiagnostics(diagnostics),
             };
 
@@ -247,6 +257,17 @@ public static class SpecParsingTools
             case VisualizationDecl v:
                 summary["name"] = v.Name;
                 summary["parameterCount"] = v.Parameters.Count;
+                break;
+            case ArchitectureDecl a:
+                summary["name"] = a.Name;
+                summary["version"] = a.Version ?? "(default)";
+                summary["enforceRuleCount"] = a.EnforceRules.Count;
+                summary["realizationCount"] = a.Realizations.Count;
+                break;
+            case LayerContractDecl lc:
+                summary["name"] = lc.Name;
+                summary["layer"] = lc.LayerName;
+                summary["clauseCount"] = lc.Clauses.Count;
                 break;
         }
 

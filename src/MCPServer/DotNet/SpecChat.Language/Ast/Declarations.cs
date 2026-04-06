@@ -109,6 +109,7 @@ public sealed record ContractClause(
     ContractClauseKind Kind,
     Expr? Expression,
     string? ProseGuarantee,
+    string? ValidationCategory,
     SourceLocation Location) : AstNode(Location);
 
 /// <summary>

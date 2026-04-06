@@ -55,6 +55,9 @@ public sealed record ComponentDecl(
     string? Version,
     List<ContractDecl> Contracts,
     List<RationaleDecl> Rationales,
+    string? Layer,
+    string? Owns,
+    List<string> Suppressions,
     SourceLocation Location) : AstNode(Location);
 
 // ── Topology ─────────────────────────────────────────────────────────

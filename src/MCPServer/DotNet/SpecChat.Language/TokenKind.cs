@@ -123,6 +123,26 @@ public enum TokenKind
     Lte,
     Gte,
 
+    // ── The Standard extension keywords ────────────────────────
+    KwArchitecture,
+    KwEnforce,
+    KwVocabulary,
+    KwLayer,
+    KwOwns,
+    KwBroker,
+    KwFoundation,
+    KwProcessing,
+    KwOrchestration,
+    KwCoordination,
+    KwAggregation,
+    KwExposer,
+    KwTest,
+    KwService,
+    KwLayerContract,
+    KwRealize,
+    KwValidation,
+    KwSuppress,
+
     // ── End of input ─────────────────────────────────────────
     Eof,
 }

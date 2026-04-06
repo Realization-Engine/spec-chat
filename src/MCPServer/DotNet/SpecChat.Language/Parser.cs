@@ -6,7 +6,7 @@ namespace SpecChat.Language;
 /// Recursive-descent parser that consumes a token list (from <see cref="Lexer"/>)
 /// and produces a <see cref="SpecDocument"/> AST.
 /// </summary>
-public sealed class Parser
+public sealed partial class Parser
 {
     private readonly List<Token> _tokens;
     private readonly string _filePath;
@@ -108,7 +108,8 @@ public sealed class Parser
             or TokenKind.KwRefines or TokenKind.KwSystem or TokenKind.KwTopology
             or TokenKind.KwPhase or TokenKind.KwTrace or TokenKind.KwConstraint
             or TokenKind.KwPackagePolicy or TokenKind.KwDotnet or TokenKind.KwPage
-            or TokenKind.KwVisualization => true,
+            or TokenKind.KwVisualization
+            or TokenKind.KwArchitecture or TokenKind.KwLayerContract => true,
         _ => false,
     };
 
@@ -140,7 +141,14 @@ public sealed class Parser
             or TokenKind.KwProduces or TokenKind.KwExpects
             or TokenKind.KwTopology or TokenKind.KwDotnet
             or TokenKind.KwCategory or TokenKind.KwIncludes
-            or TokenKind.KwAllow or TokenKind.KwDeny => true,
+            or TokenKind.KwAllow or TokenKind.KwDeny
+            // The Standard extension keywords (contextual in field-name positions)
+            or TokenKind.KwArchitecture or TokenKind.KwEnforce or TokenKind.KwVocabulary
+            or TokenKind.KwLayer or TokenKind.KwOwns or TokenKind.KwBroker
+            or TokenKind.KwFoundation or TokenKind.KwProcessing or TokenKind.KwOrchestration
+            or TokenKind.KwCoordination or TokenKind.KwAggregation or TokenKind.KwExposer
+            or TokenKind.KwTest or TokenKind.KwService or TokenKind.KwLayerContract
+            or TokenKind.KwRealize or TokenKind.KwValidation or TokenKind.KwSuppress => true,
         _ => false,
     };
 
@@ -249,6 +257,8 @@ public sealed class Parser
                 => ParseDotNetSolutionDecl(),
             TokenKind.KwPage => ParsePageDecl(),
             TokenKind.KwVisualization => ParseVisualizationDecl(),
+            TokenKind.KwArchitecture => ParseArchitectureDecl(),
+            TokenKind.KwLayerContract => ParseLayerContractDecl(),
             _ => null,
         };
     }
@@ -472,20 +482,29 @@ public sealed class Parser
             if (Match(TokenKind.KwRequires))
             {
                 Expr expr = ParseExpr();
+                string? validationCategory = null;
+                if (Check(TokenKind.At) && PeekAhead(1).Kind == TokenKind.KwValidation)
+                {
+                    Advance(); // @
+                    Advance(); // validation
+                    Expect(TokenKind.LParen);
+                    validationCategory = Advance().Text;
+                    Expect(TokenKind.RParen);
+                }
                 Expect(TokenKind.Semicolon);
-                clauses.Add(new ContractClause(ContractClauseKind.Requires, expr, null, cLoc));
+                clauses.Add(new ContractClause(ContractClauseKind.Requires, expr, null, validationCategory, cLoc));
             }
             else if (Match(TokenKind.KwEnsures))
             {
                 Expr expr = ParseExpr();
                 Expect(TokenKind.Semicolon);
-                clauses.Add(new ContractClause(ContractClauseKind.Ensures, expr, null, cLoc));
+                clauses.Add(new ContractClause(ContractClauseKind.Ensures, expr, null, null, cLoc));
             }
             else if (Match(TokenKind.KwGuarantees))
             {
                 string prose = ExpectStringContent();
                 Expect(TokenKind.Semicolon);
-                clauses.Add(new ContractClause(ContractClauseKind.Guarantees, null, prose, cLoc));
+                clauses.Add(new ContractClause(ContractClauseKind.Guarantees, null, prose, null, cLoc));
             }
             else
             {
@@ -666,6 +685,39 @@ public sealed class Parser
             {
                 components.Add(ParseConsumedComponentDecl());
             }
+            // The Standard extension: layer-prefixed declarations
+            else if (Check(TokenKind.KwBroker) && IsNameToken(PeekAhead(1).Kind))
+            {
+                components.Add(ParseLayerPrefixedDecl("broker"));
+            }
+            else if (Check(TokenKind.KwExposer) && IsNameToken(PeekAhead(1).Kind))
+            {
+                components.Add(ParseLayerPrefixedDecl("exposer"));
+            }
+            else if (Check(TokenKind.KwTest) && IsNameToken(PeekAhead(1).Kind))
+            {
+                components.Add(ParseLayerPrefixedDecl("test"));
+            }
+            else if (Check(TokenKind.KwFoundation) && PeekAhead(1).Kind == TokenKind.KwService)
+            {
+                components.Add(ParseServiceDecl("foundation"));
+            }
+            else if (Check(TokenKind.KwProcessing) && PeekAhead(1).Kind == TokenKind.KwService)
+            {
+                components.Add(ParseServiceDecl("processing"));
+            }
+            else if (Check(TokenKind.KwOrchestration) && PeekAhead(1).Kind == TokenKind.KwService)
+            {
+                components.Add(ParseServiceDecl("orchestration"));
+            }
+            else if (Check(TokenKind.KwCoordination) && PeekAhead(1).Kind == TokenKind.KwService)
+            {
+                components.Add(ParseServiceDecl("coordination"));
+            }
+            else if (Check(TokenKind.KwAggregation) && PeekAhead(1).Kind == TokenKind.KwService)
+            {
+                components.Add(ParseServiceDecl("aggregation"));
+            }
             else
             {
                 ReportError($"Unexpected token in system body: {Peek().Kind}");
@@ -700,6 +752,9 @@ public sealed class Parser
         string? path = null;
         string? status = null;
         string? responsibility = null;
+        string? layer = null;
+        string? owns = null;
+        var suppressions = new List<string>();
         var contracts = new List<ContractDecl>();
         var rationales = new List<RationaleDecl>();
 
@@ -741,6 +796,29 @@ public sealed class Parser
                 ParseTargetValue(); // consume but ComponentDecl AST has no separate target field
                 Expect(TokenKind.Semicolon);
             }
+            else if (Check(TokenKind.KwLayer))
+            {
+                Advance();
+                Expect(TokenKind.Colon);
+                layer = ParseLayerKeywordOrIdent();
+                Expect(TokenKind.Semicolon);
+            }
+            else if (Check(TokenKind.KwOwns))
+            {
+                Advance();
+                Expect(TokenKind.Colon);
+                owns = ExpectName();
+                Expect(TokenKind.Semicolon);
+            }
+            else if (Check(TokenKind.At) && PeekAhead(1).Kind == TokenKind.KwSuppress)
+            {
+                Advance(); // @
+                Advance(); // suppress
+                Expect(TokenKind.LParen);
+                suppressions.Add(Advance().Text);
+                Expect(TokenKind.RParen);
+                Expect(TokenKind.Semicolon);
+            }
             else if (Check(TokenKind.KwContract))
             {
                 contracts.Add(ParseInlineContractDecl());
@@ -760,7 +838,8 @@ public sealed class Parser
         Expect(TokenKind.RBrace);
         return new ComponentDecl(
             name, ComponentDisposition.Authored, kind, path, status,
-            responsibility, [], null, null, contracts, rationales, loc);
+            responsibility, [], null, null, contracts, rationales,
+            layer, owns, suppressions, loc);
     }
 
     private string ParseKindValue()
@@ -849,7 +928,8 @@ public sealed class Parser
         Expect(TokenKind.RBrace);
         return new ComponentDecl(
             name, ComponentDisposition.Consumed, null, null, null,
-            responsibility, usedBy, sourcePackage, version, contracts, rationales, loc);
+            responsibility, usedBy, sourcePackage, version, contracts, rationales,
+            null, null, [], loc);
     }
 
     /// <summary>

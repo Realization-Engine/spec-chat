@@ -105,6 +105,26 @@ public sealed class Lexer
             ["double"] = TokenKind.KwDouble,
             ["bool"] = TokenKind.KwBool,
             ["unknown"] = TokenKind.KwUnknown,
+
+            // The Standard extension keywords
+            ["architecture"] = TokenKind.KwArchitecture,
+            ["enforce"] = TokenKind.KwEnforce,
+            ["vocabulary"] = TokenKind.KwVocabulary,
+            ["layer"] = TokenKind.KwLayer,
+            ["owns"] = TokenKind.KwOwns,
+            ["broker"] = TokenKind.KwBroker,
+            ["foundation"] = TokenKind.KwFoundation,
+            ["processing"] = TokenKind.KwProcessing,
+            ["orchestration"] = TokenKind.KwOrchestration,
+            ["coordination"] = TokenKind.KwCoordination,
+            ["aggregation"] = TokenKind.KwAggregation,
+            ["exposer"] = TokenKind.KwExposer,
+            ["test"] = TokenKind.KwTest,
+            ["service"] = TokenKind.KwService,
+            ["layer_contract"] = TokenKind.KwLayerContract,
+            ["realize"] = TokenKind.KwRealize,
+            ["validation"] = TokenKind.KwValidation,
+            ["suppress"] = TokenKind.KwSuppress,
         }.ToFrozenDictionary();
 
     /// <summary>
