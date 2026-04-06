@@ -1,6 +1,6 @@
 # Enquiry Into Specification as Meaningful Struggle
 
-*A companion memorandum to "The Multiplier, Mirror and The Tipping Point"*
+*A companion memorandum to [The Multiplier and the Mirror](https://realization-engine.github.io/fstar/docs/The_Multiplier_and_the_Mirror.html)*
 
 **Author:** Dennis A. Landi
 **Version:** 0.08
