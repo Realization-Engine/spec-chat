@@ -9,11 +9,15 @@
 
 ## The FORCE Problem
 
-The canonical FORCE dynamics equation (Eq. 11) states:
+The canonical FORCE dynamics equation from [The Multiplier and the Mirror](https://realization-engine.github.io/fstar/docs/The_Multiplier_and_the_Mirror.html) (Eq. 11) states:
 
 $$dF/dt = \alpha S + \gamma E F - \beta R - \sigma M_{\text{absorbed}}$$
 
-FORCE grows through struggle ($\alpha S$) and through deliberate engagement with the mirror ($\gamma E F$). It decays through passive reliance ($\beta R$) and through organizational absorption of work into the LLM ($\sigma M_{\text{absorbed}}$).
+where $dF/dt$ is the rate of change of FORCE over time, $S(t)$ is productive struggle, $E(t)$ is deliberate use of the LLM as a thinking partner, $R(t)$ is passive reliance on the LLM, $M_{\text{absorbed}}(t)$ is model capability gained from F-to-M transfer, $\alpha$, $\beta$, $\gamma$ are learning coefficients, and $\sigma$ is the rate of organizational de-investment in human capability.
+
+The rate at which FORCE changes is a sum of four terms. $\alpha S$ is FORCE gained from traditional struggle. $\gamma E F$ is FORCE gained from deliberate LLM engagement; this term is multiplicative with existing FORCE, so the growth channel compounds. $\beta R$ is FORCE lost to passive reliance. $\sigma M_{\text{absorbed}}$ is FORCE lost because the organization reduces investment in human capability once the model appears to handle it. When the F-to-M transfer has not yet shifted organizational behavior, $\sigma \approx 0$ and the equation reduces to $dF/dt = \alpha S + \gamma E F - \beta R$.
+
+In short: FORCE evolves under four competing pressures. Struggle builds it. Deliberate engagement compounds it. Passive reliance erodes it. Organizational de-investment erodes it.
 
 For decades, the $\alpha S$ term drew from a specific source: the mechanical work of implementation. Writing code, debugging code, tracking down the one-character fix at 2 AM, wrestling with framework incompatibilities, carrying intent down through layers of abstraction into running software. That work was painful, effortful, consequential, and directly experienced. It encoded durable capability. The synapse-encoding happened there.
 
