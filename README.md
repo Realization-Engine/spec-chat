@@ -16,7 +16,7 @@ The full argument for why specification is the site where durable human capabili
 
 ## What SpecChat Is
 
-SpecChat is a specification language embedded in Markdown. Spec blocks are typed engineering objects with formal semantics: entities with contracts and invariants, components with topology rules, build phases with gate conditions, traces, constraints, package policies, and verification obligations. The `.spec.md` document is the primary engineering artifact. Everything generated from it (code, tests, documentation, dependency graphs) is a projection of the specification model.
+SpecChat is a specification-driven system for authoring software through collaboration between humans and LLMs. Its formal language, SpecLang, is embedded in Markdown: spec blocks are typed engineering objects with formal semantics, covering entities, contracts, invariants, components with topology rules, build phases with gate conditions, traces, constraints, package policies, and verification obligations. The `.spec.md` document is the primary engineering artifact. Everything generated from it (code, tests, documentation, dependency graphs) is a projection of the specification model.
 
 The division of labor is explicit. The human authors commitments: abstractions, boundaries, constraints, invariants, contracts, and judgments about what must be preserved. The LLM operates as the realization engine: it consumes the specification and produces systems that conform to it. The boundary between the two is the specification model.
 
@@ -60,7 +60,7 @@ The full language definition is in the [SpecLang Specification](Delivery/spec-ch
 
 ## The Standard Extension
 
-An opt-in extension allows specifications to encode the architectural rules of Hassan Habib's "The Standard." It adds layer-prefixed declaration forms (broker, foundation service, processing service, orchestration service, exposer, test), layer contracts that attach behavioral obligations to every component at a given layer, realization directives for advisory code-generation conventions, and semantic validation rules (topology checking against the layer hierarchy, Florance Pattern enforcement, entity ownership, autonomy constraints, vocabulary checking, validation ordering).
+An opt-in extension allows specifications to encode the architectural rules of Hassan Habib's [The Standard](https://github.com/hassanhabib/The-Standard). It adds layer-prefixed declaration forms (broker, foundation service, processing service, orchestration service, exposer, test), layer contracts that attach behavioral obligations to every component at a given layer, realization directives for advisory code-generation conventions, and semantic validation rules (topology checking against the layer hierarchy, Florance Pattern enforcement, entity ownership, autonomy constraints, vocabulary checking, validation ordering).
 
 The extension is activated by an `architecture TheStandard` declaration in the base system spec. When absent, the base language operates unchanged.
 
