@@ -1,12 +1,12 @@
-﻿# TodoApp -- System Manifest
+# TodoApp -- System Manifest
 
 ## Tracking
 
 | Field | Value |
 |---|---|
-| Created | 2026-04-05 |
-| State | Reviewed |
-| Reviewed | 2026-04-06 |
+| Created | 2026-04-06 |
+| State | Draft |
+| Reviewed | |
 | Approved | |
 | Executed | |
 | Verified | |
@@ -17,11 +17,11 @@
 | Field | Value |
 |---|---|
 | System | TodoApp |
-| Base spec | TodoApp.spec.md |
+| Base spec | todo-app-the-standard.spec.md |
 | Target | net10.0 |
 | Spec count | 1 |
 
-This manifest governs the specification collection for the TodoApp system. The base spec (TodoApp.spec.md) defines the system skeleton: components, topology, phases, traces, constraints, data entities, contracts, package policy, and platform realization. All future specs are incremental additions that reference the base.
+This manifest governs the specification collection for the TodoApp system. The base spec defines the system skeleton: architecture declaration, layer-prefixed components, topology, phases, layer contracts, data entities, boundary contracts, constraints, and traceability.
 
 ## Lifecycle States
 
@@ -38,6 +38,7 @@ Every spec document moves through a defined sequence of states. Each transition 
 **Rules:**
 - States are sequential: Draft, Reviewed, Approved, Executed, Verified.
 - A spec cannot skip states.
+- Decision specs enter Approved when the recommendation is accepted.
 - Feature and bug specs enter Executed when their code implementation is complete.
 - Amendment specs enter Executed when their corrections are applied to the base spec.
 - The base spec enters Executed when it has been used to generate or validate source code.
@@ -45,7 +46,7 @@ Every spec document moves through a defined sequence of states. Each transition 
 
 ## Tracking Block Convention
 
-Every spec document must contain a Tracking block immediately after the title and header metadata, before the first content section.
+Every spec document must contain a Tracking block immediately after the title, before the first content section.
 
 Format:
 
@@ -59,47 +60,50 @@ Format:
 | Verified | YYYY-MM-DD or blank |
 | Dependencies | Spec filenames with parenthetical notes, or "None" |
 
-**Rules:**
-- Created uses the file creation date.
-- State reflects the current lifecycle state.
-- Date fields are set when the corresponding state transition occurs.
-- Dependencies lists other spec filenames that must reach Executed state before this spec can be executed.
-- "None" if the spec has no prerequisites beyond the base spec.
-
 ## Document Type Registry
 
 | Type | Purpose | Template |
 |---|---|---|
-| Base system spec | System skeleton: components, topology, phases, traces, constraints, data, contracts | TodoApp.spec.md |
+| Base system spec | System skeleton: architecture, components, topology, phases, layer contracts, data, contracts | todo-app-the-standard.spec.md |
 | Feature spec | New capability: component additions, entities, constraints, tests | (none yet) |
-| Bug spec | Source-gap correction: root cause, fix, regression tests | (none yet) |
-| Decision spec | Architecture choice: options, recommendation, rationale | (none yet) |
-| Amendment spec | Corrections to existing spec: field changes, invariant updates | (none yet) |
+| Bug spec | Source gap the spec identifies: current vs. specified behavior, acceptance criteria | (none yet) |
+| Decision spec | Conflict between spec and source: options, trade-offs, recommendation | (none yet) |
+| Amendment | Base spec correction without new capability | (none yet) |
+| Manifest | Root document binding a spec collection | todo-app-the-standard.manifest.md |
 
 ## Conventions
 
 ### Writing Style
 - No em-dashes. Use commas, semicolons, colons, or separate sentences.
 - No emoticons.
+- No purple prose or marketing-type phrases.
 - Precise file paths and source references.
 
+### Architecture
+- This system follows The Standard (Hassan Habib, version 1.0).
+- All authored components use layer-prefixed declaration forms.
+- Layer contracts and realization directives are defined in the base spec.
+
 ### SpecLang Syntax
-- Formal declarations (authored component, entity, trace, contract, constraint, rationale) follow the SpecLang grammar.
+- Formal declarations follow the grammar defined in SpecLang-Grammar.md with The Standard extension.
+- Layer-prefixed forms (`broker`, `foundation service`, `exposer`, `test`) are preferred over generic `authored component`.
 - `requires` and `ensures` take expressions; `guarantees` takes prose strings.
+- `@validation` annotations classify preconditions as structural, logical, or external.
 - `invariant` requires a name string, colon, and expression.
-- `rationale` uses either simple form (`rationale STRING;`) or structured form (`rationale { context ...; decision ...; consequence ...; }`).
 
 ## Spec Inventory
 
 | Filename | Type | State | Tier | Dependencies |
 |---|---|---|---|---|
-| TodoApp.spec.md | Base | Reviewed | -- | None |
+| todo-app-the-standard.spec.md | Base | Draft | -- | None |
 
 ## Execution Order
 
-Specs are grouped into tiers by dependency. All specs in a tier can be executed in parallel. A tier cannot begin until all dependencies from prior tiers have reached Executed state.
+### Tier 0: Base System (Draft)
 
-Currently only the base spec exists. Tiers will be added as incremental specs are filed.
+The base spec defines the complete system skeleton. Once reviewed and approved, it can be executed to generate the initial codebase.
+
+1. todo-app-the-standard.spec.md
 
 ## Open Items
 

@@ -5,8 +5,8 @@
 | Field | Value |
 |---|---|
 | Created | 2026-04-05 |
-| State | Draft |
-| Reviewed | |
+| State | Reviewed |
+| Reviewed | 2026-04-06 |
 | Approved | |
 | Executed | |
 | Verified | |

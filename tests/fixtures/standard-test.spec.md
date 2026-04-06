@@ -29,15 +29,16 @@ system StandardTestSystem {
     target: "net10.0";
     responsibility: "Test system for Standard extension validation.";
 
-    authored component TestBroker {
+    broker TestBroker {
         kind: library;
         path: "src/Brokers/TestBroker";
         responsibility: "Wraps data storage. No flow control.";
     }
 
-    authored component TestFoundation {
+    foundation service TestFoundation {
         kind: library;
         path: "src/Services/TestFoundation";
+        owns: TestEntity;
         responsibility: "Foundation service for TestEntity.";
     }
 }

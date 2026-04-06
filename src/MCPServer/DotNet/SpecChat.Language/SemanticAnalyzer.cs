@@ -25,6 +25,18 @@ public sealed class SemanticAnalyzer
         CheckPhaseOrdering(document);
         CheckPackagePolicy(document);
         CheckCrossReferences(document);
+
+        // The Standard extension: activate if architecture declaration present
+        var archDecl = document.Declarations.OfType<ArchitectureDecl>().FirstOrDefault();
+        if (archDecl is not null)
+        {
+            var standardAnalyzer = new StandardSemanticAnalyzer(_diagnostics);
+            standardAnalyzer.Analyze(document, archDecl);
+        }
+        else
+        {
+            StandardSemanticAnalyzer.WarnLayerPrefixedWithoutArchitecture(document, _diagnostics);
+        }
     }
 
     // ── Topology validation ─────────────────────────────────────────
@@ -404,6 +416,12 @@ public sealed class SemanticAnalyzer
                     break;
                 case PhaseDecl phase:
                     ids.Add(phase.Name);
+                    break;
+                case ArchitectureDecl arch:
+                    ids.Add(arch.Name);
+                    break;
+                case LayerContractDecl lc:
+                    ids.Add(lc.Name);
                     break;
             }
         }

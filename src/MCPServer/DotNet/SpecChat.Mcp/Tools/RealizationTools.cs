@@ -282,6 +282,8 @@ public static class RealizationTools
 
                 if (comp.Status is not null)
                     project["status"] = comp.Status;
+                if (comp.Layer is not null)
+                    project["layer"] = comp.Layer;
 
                 projects.Add(project);
             }
@@ -405,6 +407,8 @@ public static class RealizationTools
                 clauseDict["prose"] = clause.ProseGuarantee;
             if (clause.Expression is not null)
                 clauseDict["hasExpression"] = true;
+            if (clause.ValidationCategory is not null)
+                clauseDict["validationCategory"] = clause.ValidationCategory;
             clauses.Add(clauseDict);
         }
 
