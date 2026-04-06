@@ -88,6 +88,13 @@ jobs:
                 <p>Supporting citations for the Enquiry.</p>
               </li>
             </ul>
+            <h2>Related</h2>
+            <ul class="doc-list">
+              <li>
+                <a href="https://realization-engine.github.io/fstar/docs/The_Multiplier_and_the_Mirror.html">The Multiplier and the Mirror</a>
+                <p>The parent paper: formal foundations for specification as meaningful struggle.</p>
+              </li>
+            </ul>
             <a class="back-link" href="https://github.com/realization-engine/spec-chat">Back to Repository</a>
           </body>
           </html>
