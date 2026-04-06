@@ -30,6 +30,34 @@ SpecChat organizes around four layers:
 
 4. **Manifest.** A single entry-point file binds the collection together: which system, what document types exist, lifecycle rules, the full inventory of specs with their states, and execution order.
 
+## The SpecLang DSL
+
+SpecLang is the formal language inside SpecChat. Specification blocks live in ` ```spec ` fenced code blocks within ordinary Markdown; the surrounding prose carries design rationale and discussion. A `.spec.md` file is simultaneously a readable document and a machine-checkable specification.
+
+The language covers three registers of specification:
+
+**Data specification** defines the domain model: entities with typed fields, enums with semantic descriptions, cross-field invariants, contracts at request/response boundaries, confidence signals that declare expected extraction reliability, and rationale (inline or structured micro-ADRs) that records why each choice was made.
+
+```spec
+entity LineItem {
+    drink: CoffeeDrink @confidence(high);
+    size: CoffeeSize @default(medium) @confidence(medium);
+    quantity: int @range(1..10) @default(1);
+
+    invariant "espresso is always small":
+        drink == CoffeeDrink.espresso implies size == CoffeeSize.small;
+
+    rationale "drink is the primary item; size, temperature,
+               and quantity are modifiers with sensible defaults.";
+}
+```
+
+**Systems specification** defines architecture: a hierarchical decomposition rooted at a `system` node, where every child is either `authored` (we build it) or `consumed` (we depend on it). Authored components carry responsibilities, internal structure, build phases with gate conditions, and contracts. Consumed components carry version constraints and boundary expectations. Topology rules, traceability mappings, cross-cutting constraints, and package policies are all first-class constructs.
+
+**Design specification** defines what users see and interact with: pages, visualizations, parameter bindings, layout intent, and behavioral commitments. Prose intent is architecturally associated with formal declarations, so the LLM receives both during realization.
+
+The full language definition is in the [SpecLang Specification](Delivery/spec-chat/SpecLang-Specification.md). The formal EBNF grammar is in the [SpecLang Grammar](Delivery/spec-chat/SpecLang-Grammar.md).
+
 ## The Standard Extension
 
 An opt-in extension allows specifications to encode the architectural rules of Hassan Habib's "The Standard." It adds layer-prefixed declaration forms (broker, foundation service, processing service, orchestration service, exposer, test), layer contracts that attach behavioral obligations to every component at a given layer, realization directives for advisory code-generation conventions, and semantic validation rules (topology checking against the layer hierarchy, Florance Pattern enforcement, entity ownership, autonomy constraints, vocabulary checking, validation ordering).
@@ -59,7 +87,7 @@ See the [Extension Overview](Delivery/spec-chat/extensions/the-standard/TheStand
 
 ## Installation
 
-SpecChat has been tested with [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Support for other LLM environments is planned.
+There are two ways to use SpecChat: as context files for Claude Code, or as an MCP server for any MCP-compatible IDE.
 
 ### Claude Code
 
@@ -89,6 +117,62 @@ After copying, your `.claude/` directory should contain:
 ```
 
 Claude Code will read these files as context when working with `.spec.md` documents.
+
+### MCP Server
+
+The SpecChat MCP server is a .NET 10 application that exposes SpecLang parsing, validation, and code generation as [Model Context Protocol](https://modelcontextprotocol.io/) tools. It works with any MCP-compatible IDE, including VS Code (Copilot agent mode) and Visual Studio 2026.
+
+The server provides five tool groups:
+
+| Tool group | What it does |
+|---|---|
+| **Parsing** | Parse `.spec.md` files and individual spec blocks into an AST; list declared constructs |
+| **Validation** | Semantic validation, topology checking, trace coverage, phase gate consistency, package policy compliance |
+| **Standard extension** | Layer hierarchy, Flow Forward, Florance Pattern, entity ownership, autonomy, and vocabulary validation |
+| **Manifest** | Parse manifests, check lifecycle transitions, identify next executable specs, advance spec state |
+| **Realization** | Extract contracts and entities, generate project scaffolds, produce interface/type definitions |
+
+#### Run from source
+
+Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download).
+
+Add an MCP server entry pointing at the project. The configuration file location depends on your IDE:
+
+- **VS Code**: `.vscode/mcp.json` in your workspace
+- **Visual Studio**: `.mcp.json` in your solution directory
+- **Claude Code**: `.mcp.json` in your project root
+
+```json
+{
+  "servers": {
+    "specchat-mcp": {
+      "type": "stdio",
+      "command": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "<path-to-repo>/src/MCPServer/DotNet/SpecChat.Mcp"
+      ]
+    }
+  }
+}
+```
+
+#### Install from NuGet (once published)
+
+```json
+{
+  "servers": {
+    "specchat-mcp": {
+      "type": "stdio",
+      "command": "dnx",
+      "args": ["SpecChat.Mcp", "--version", "0.1.0-beta", "--yes"]
+    }
+  }
+}
+```
+
+The source is in [`src/MCPServer/DotNet/`](src/MCPServer/DotNet/).
 
 ## License
 
