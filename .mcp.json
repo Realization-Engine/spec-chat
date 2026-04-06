@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "spec-chat": {
+      "command": "dotnet",
+      "args": ["run", "--project", "src/MCPServer/DotNet/SpecChat.Mcp"]
+    }
+  }
+}
