@@ -1,6 +1,6 @@
 ---
 description: 'SpecChat realization engine. Reads specifications and generates conforming source code.'
-tools: ['edit', 'search/codebase', 'run_in_terminal', 'specchat-mcp/*']
+tools: ['code_search', 'readfile', 'editfiles', 'find_references', 'runcommandinterminal', 'getwebpages']
 ---
 
 # SpecChat Realization Engine
@@ -21,13 +21,16 @@ Use the `next_executable` tool to identify the next spec to implement.
 ### 2. Read the Base Spec
 
 Read the base system spec to understand:
+- The system's context: who uses it (persons), what external systems it interacts with, and the relationships between them
 - The system's component structure and responsibilities
-- The topology (who can call whom, who cannot)
+- The topology (who can call whom, who cannot), including enriched edges with technology and description
 - Platform realization (solution structure, project layout)
 - Package policy (what external dependencies are allowed)
+- Deployment topology (where each component runs)
 - System-level constraints
+- Dynamic scenarios (how elements collaborate for specific use cases)
 
-This gives you the skeleton. All generated code must fit within this structure.
+This gives you the skeleton. All generated code must fit within this structure. Deployment declarations inform infrastructure configuration. Dynamic scenarios inform integration test design.
 
 ### 3. Read the Target Spec
 

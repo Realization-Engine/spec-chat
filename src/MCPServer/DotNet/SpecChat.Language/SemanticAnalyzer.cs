@@ -20,11 +20,15 @@ public sealed class SemanticAnalyzer
     /// </summary>
     public void Analyze(SpecDocument document)
     {
+        CheckContext(document);
         CheckTopology(document);
         CheckTraces(document);
         CheckPhaseOrdering(document);
         CheckPackagePolicy(document);
         CheckCrossReferences(document);
+        CheckDeployment(document);
+        CheckViews(document);
+        CheckDynamics(document);
 
         // The Standard extension: activate if architecture declaration present
         var archDecl = document.Declarations.OfType<ArchitectureDecl>().FirstOrDefault();
@@ -348,6 +352,186 @@ public sealed class SemanticAnalyzer
         // targets because the trace vocabulary is open-ended.
     }
 
+    // ── Context validation ───────────────────────────────────────────
+
+    /// <summary>
+    /// Validates persons, external systems, and relationships.
+    /// </summary>
+    public void CheckContext(SpecDocument document)
+    {
+        var persons = document.Declarations.OfType<PersonDecl>().ToList();
+        var externalSystems = document.Declarations.OfType<ExternalSystemDecl>().ToList();
+        var relationships = document.Declarations.OfType<RelationshipDecl>().ToList();
+        var systems = document.Declarations.OfType<SystemDecl>().ToList();
+
+        // Person uniqueness
+        var personNames = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var p in persons)
+        {
+            if (!personNames.Add(p.Name))
+                _diagnostics.ReportError(p.Location, $"Duplicate person declaration: '{p.Name}'.");
+        }
+
+        // External system uniqueness and no collision with system names
+        var externalNames = new HashSet<string>(StringComparer.Ordinal);
+        var systemNames = new HashSet<string>(systems.Select(s => s.Name), StringComparer.Ordinal);
+        foreach (var es in externalSystems)
+        {
+            if (!externalNames.Add(es.Name))
+                _diagnostics.ReportError(es.Location, $"Duplicate external system declaration: '{es.Name}'.");
+            if (systemNames.Contains(es.Name))
+                _diagnostics.ReportError(es.Location, $"External system '{es.Name}' collides with a declared system name.");
+        }
+
+        // Relationship endpoint resolution
+        var allContextNames = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var p in persons) allContextNames.Add(p.Name);
+        foreach (var es in externalSystems) allContextNames.Add(es.Name);
+        foreach (var s in systems) allContextNames.Add(s.Name);
+
+        foreach (var rel in relationships)
+        {
+            if (!allContextNames.Contains(rel.Source))
+                _diagnostics.ReportError(rel.Location, $"Relationship source '{rel.Source}' is not a declared person, system, or external system.");
+            if (!allContextNames.Contains(rel.Target))
+                _diagnostics.ReportError(rel.Location, $"Relationship target '{rel.Target}' is not a declared person, system, or external system.");
+        }
+    }
+
+    // ── Deployment validation ──────────────────────────────────────
+
+    /// <summary>
+    /// Validates deployment declarations.
+    /// </summary>
+    public void CheckDeployment(SpecDocument document)
+    {
+        HashSet<string> declaredComponents = CollectDeclaredComponents(document);
+        var deployments = document.Declarations.OfType<DeploymentDecl>().ToList();
+
+        // Deployment environment naming uniqueness
+        var envNames = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var dep in deployments)
+        {
+            if (!envNames.Add(dep.Name))
+                _diagnostics.ReportError(dep.Location, $"Duplicate deployment environment: '{dep.Name}'.");
+
+            ValidateDeploymentNodes(dep.Nodes, declaredComponents, dep.Name);
+        }
+    }
+
+    private void ValidateDeploymentNodes(List<DeploymentNodeDecl> nodes, HashSet<string> declaredComponents, string envName)
+    {
+        var nodeNames = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var node in nodes)
+        {
+            if (!nodeNames.Add(node.Name))
+                _diagnostics.ReportWarning(node.Location, $"Duplicate node name '{node.Name}' in deployment '{envName}'.");
+
+            if (node.Instance is not null && !declaredComponents.Contains(node.Instance))
+                _diagnostics.ReportError(node.Location,
+                    $"Deployment node '{node.Name}' references instance '{node.Instance}', " +
+                    "which is not a declared authored component.");
+
+            // Recurse into child nodes
+            ValidateDeploymentNodes(node.ChildNodes, declaredComponents, envName);
+        }
+    }
+
+    // ── View validation ────────────────────────────────────────────
+
+    /// <summary>
+    /// Validates view declarations.
+    /// </summary>
+    public void CheckViews(SpecDocument document)
+    {
+        var systems = document.Declarations.OfType<SystemDecl>().ToList();
+        var deployments = document.Declarations.OfType<DeploymentDecl>().ToList();
+        var systemNames = new HashSet<string>(systems.Select(s => s.Name), StringComparer.Ordinal);
+        var deploymentNames = new HashSet<string>(deployments.Select(d => d.Name), StringComparer.Ordinal);
+        HashSet<string> allKnown = CollectAllKnownIdentifiers(document);
+
+        foreach (var view in document.Declarations.OfType<ViewDecl>())
+        {
+            // View kind consistency (§5.20)
+            if (view.Kind == ViewKind.SystemLandscape && view.Scope is not null)
+                _diagnostics.ReportWarning(view.Location, "systemLandscape views should not use an 'of' scope clause.");
+
+            if (view.Kind is ViewKind.SystemContext or ViewKind.Container && view.Scope is not null
+                && !systemNames.Contains(view.Scope))
+            {
+                _diagnostics.ReportError(view.Location,
+                    $"View '{view.Name}' scopes to '{view.Scope}', which is not a declared system.");
+            }
+
+            if (view.Kind == ViewKind.Deployment && view.Scope is not null
+                && !deploymentNames.Contains(view.Scope))
+            {
+                _diagnostics.ReportError(view.Location,
+                    $"View '{view.Name}' scopes to '{view.Scope}', which is not a declared deployment environment.");
+            }
+
+            // Validate explicit filter references
+            ValidateViewFilter(view.Include, allKnown, view.Name, "include");
+            ValidateViewFilter(view.Exclude, allKnown, view.Name, "exclude");
+        }
+    }
+
+    private void ValidateViewFilter(ViewFilter? filter, HashSet<string> allKnown, string viewName, string filterType)
+    {
+        if (filter is null) return;
+        if (filter.Kind == ViewFilterKind.Explicit)
+        {
+            foreach (var elem in filter.ExplicitElements)
+            {
+                if (!allKnown.Contains(elem))
+                    _diagnostics.ReportWarning(filter.Location,
+                        $"View '{viewName}' {filterType} references '{elem}', which is not a declared element.");
+            }
+        }
+    }
+
+    // ── Dynamic validation ─────────────────────────────────────────
+
+    /// <summary>
+    /// Validates dynamic declarations.
+    /// </summary>
+    public void CheckDynamics(SpecDocument document)
+    {
+        HashSet<string> allKnown = CollectAllKnownIdentifiers(document);
+
+        foreach (var dyn in document.Declarations.OfType<DynamicDecl>())
+        {
+            // Step endpoint resolution
+            foreach (var step in dyn.Steps)
+            {
+                if (!allKnown.Contains(step.Source))
+                    _diagnostics.ReportError(step.Location,
+                        $"Dynamic step {step.SequenceNumber} references source '{step.Source}', which is not a declared element.");
+                if (!allKnown.Contains(step.Target))
+                    _diagnostics.ReportError(step.Location,
+                        $"Dynamic step {step.SequenceNumber} references target '{step.Target}', which is not a declared element.");
+            }
+
+            // Step ordering: unique sequence numbers, warn on gaps
+            var seqNumbers = dyn.Steps.Select(s => s.SequenceNumber).ToList();
+            var duplicates = seqNumbers.GroupBy(n => n).Where(g => g.Count() > 1).Select(g => g.Key);
+            foreach (var dup in duplicates)
+                _diagnostics.ReportError(dyn.Location,
+                    $"Dynamic '{dyn.Name}' has duplicate sequence number {dup}.");
+
+            if (seqNumbers.Count > 0)
+            {
+                seqNumbers.Sort();
+                for (int i = 1; i < seqNumbers.Count; i++)
+                {
+                    if (seqNumbers[i] != seqNumbers[i - 1] + 1)
+                        _diagnostics.ReportWarning(dyn.Location,
+                            $"Dynamic '{dyn.Name}' has non-contiguous sequence numbers (gap between {seqNumbers[i - 1]} and {seqNumbers[i]}).");
+                }
+            }
+        }
+    }
+
     // ── Helpers ─────────────────────────────────────────────────────
 
     private static HashSet<string> CollectDeclaredComponents(SpecDocument document)
@@ -422,6 +606,21 @@ public sealed class SemanticAnalyzer
                     break;
                 case LayerContractDecl lc:
                     ids.Add(lc.Name);
+                    break;
+                case PersonDecl person:
+                    ids.Add(person.Name);
+                    break;
+                case ExternalSystemDecl ext:
+                    ids.Add(ext.Name);
+                    break;
+                case DeploymentDecl dep:
+                    ids.Add(dep.Name);
+                    break;
+                case ViewDecl view:
+                    ids.Add(view.Name);
+                    break;
+                case DynamicDecl dyn:
+                    ids.Add(dyn.Name);
                     break;
             }
         }

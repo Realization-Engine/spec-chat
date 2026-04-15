@@ -88,6 +88,25 @@ public sealed class Lexer
             ["existing"] = TokenKind.KwExisting,
             ["new"] = TokenKind.KwNew,
 
+            // Context specification keywords
+            ["person"] = TokenKind.KwPerson,
+            ["external"] = TokenKind.KwExternal,
+            ["description"] = TokenKind.KwDescription,
+            ["technology"] = TokenKind.KwTechnology,
+            ["tag"] = TokenKind.KwTag,
+
+            // Deployment specification keywords
+            ["deployment"] = TokenKind.KwDeployment,
+            ["node"] = TokenKind.KwNode,
+            ["instance"] = TokenKind.KwInstance,
+
+            // View and dynamic specification keywords
+            ["view"] = TokenKind.KwView,
+            ["include"] = TokenKind.KwInclude,
+            ["exclude"] = TokenKind.KwExclude,
+            ["autoLayout"] = TokenKind.KwAutoLayout,
+            ["dynamic"] = TokenKind.KwDynamic,
+
             // Design specification keywords
             ["page"] = TokenKind.KwPage,
             ["host"] = TokenKind.KwHost,

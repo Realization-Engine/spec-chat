@@ -269,9 +269,230 @@ contract Test {
 
         // The blazor-harness spec has complex visualization parameter bindings
         // that produce parse diagnostics. The important assertion is that all
-        // 70 blocks parse to completion without hanging and produce declarations.
+        // blocks parse to completion without hanging and produce declarations.
+        // Block count increased from 70 to 74 with the addition of context
+        // (person, external system, relationship), deployment, view, and
+        // dynamic spec blocks.
         Assert.True(allDecls.Count >= 10,
             $"Expected at least 10 top-level declarations but got {allDecls.Count}");
-        Assert.Equal(70, blocks.Count);
+        Assert.Equal(74, blocks.Count);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  CONTEXT SPECIFICATION TESTS
+    // ═══════════════════════════════════════════════════════════════
+
+    [Fact]
+    public void Parse_PersonDecl()
+    {
+        var doc = ParseSource(@"
+person Analyst {
+    description: ""Reviews revenue metrics."";
+    @tag(""stakeholder"", ""primary-user"");
+}");
+        Assert.Single(doc.Declarations);
+        var person = Assert.IsType<PersonDecl>(doc.Declarations[0]);
+        Assert.Equal("Analyst", person.Name);
+        Assert.Equal("Reviews revenue metrics.", person.Description);
+        Assert.Equal(2, person.Tags.Count);
+        Assert.Equal("stakeholder", person.Tags[0]);
+        Assert.Equal("primary-user", person.Tags[1]);
+    }
+
+    [Fact]
+    public void Parse_ExternalSystemDecl()
+    {
+        var doc = ParseSource(@"
+external system PaymentGateway {
+    description: ""Stripe payment API."";
+    technology: ""REST/HTTPS"";
+    @tag(""external"");
+}");
+        Assert.Single(doc.Declarations);
+        var ext = Assert.IsType<ExternalSystemDecl>(doc.Declarations[0]);
+        Assert.Equal("PaymentGateway", ext.Name);
+        Assert.Equal("Stripe payment API.", ext.Description);
+        Assert.Equal("REST/HTTPS", ext.Technology);
+        Assert.Single(ext.Tags);
+    }
+
+    [Fact]
+    public void Parse_RelationshipDecl_ShortForm()
+    {
+        var doc = ParseSource(@"Analyst -> Dashboard : ""Reviews dashboards."";");
+        Assert.Single(doc.Declarations);
+        var rel = Assert.IsType<RelationshipDecl>(doc.Declarations[0]);
+        Assert.Equal("Analyst", rel.Source);
+        Assert.Equal("Dashboard", rel.Target);
+        Assert.Equal("Reviews dashboards.", rel.Description);
+        Assert.Null(rel.Technology);
+    }
+
+    [Fact]
+    public void Parse_RelationshipDecl_BlockForm()
+    {
+        var doc = ParseSource(@"
+App -> PaymentGateway {
+    description: ""Fetches transactions."";
+    technology: ""REST/HTTPS"";
+}");
+        Assert.Single(doc.Declarations);
+        var rel = Assert.IsType<RelationshipDecl>(doc.Declarations[0]);
+        Assert.Equal("App", rel.Source);
+        Assert.Equal("PaymentGateway", rel.Target);
+        Assert.Equal("Fetches transactions.", rel.Description);
+        Assert.Equal("REST/HTTPS", rel.Technology);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  DEPLOYMENT SPECIFICATION TESTS
+    // ═══════════════════════════════════════════════════════════════
+
+    [Fact]
+    public void Parse_DeploymentDecl_NestedNodes()
+    {
+        var doc = ParseSource(@"
+deployment Production {
+    node ""Azure App Service"" {
+        technology: ""Linux/P1v3"";
+        node ""WASM Runtime"" {
+            technology: ""WebAssembly"";
+            instance: App;
+        }
+    }
+}");
+        Assert.Single(doc.Declarations);
+        var dep = Assert.IsType<DeploymentDecl>(doc.Declarations[0]);
+        Assert.Equal("Production", dep.Name);
+        Assert.Single(dep.Nodes);
+        Assert.Equal("Azure App Service", dep.Nodes[0].Name);
+        Assert.Equal("Linux/P1v3", dep.Nodes[0].Technology);
+        Assert.Single(dep.Nodes[0].ChildNodes);
+        var inner = dep.Nodes[0].ChildNodes[0];
+        Assert.Equal("WASM Runtime", inner.Name);
+        Assert.Equal("WebAssembly", inner.Technology);
+        Assert.Equal("App", inner.Instance);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  VIEW SPECIFICATION TESTS
+    // ═══════════════════════════════════════════════════════════════
+
+    [Fact]
+    public void Parse_ViewDecl_SystemContext()
+    {
+        var doc = ParseSource(@"
+view systemContext of Dashboard MainView {
+    include: all;
+    autoLayout: ""top-down"";
+    description: ""The system and its users."";
+}");
+        Assert.Single(doc.Declarations);
+        var view = Assert.IsType<ViewDecl>(doc.Declarations[0]);
+        Assert.Equal(ViewKind.SystemContext, view.Kind);
+        Assert.Equal("Dashboard", view.Scope);
+        Assert.Equal("MainView", view.Name);
+        Assert.NotNull(view.Include);
+        Assert.Equal(ViewFilterKind.All, view.Include!.Kind);
+        Assert.Equal(LayoutDirection.TopDown, view.AutoLayout);
+    }
+
+    [Fact]
+    public void Parse_ViewDecl_WithTaggedFilter()
+    {
+        var doc = ParseSource(@"
+view container of Dashboard ContainerView {
+    include: all;
+    exclude: tagged ""internal-only"";
+}");
+        Assert.Single(doc.Declarations);
+        var view = Assert.IsType<ViewDecl>(doc.Declarations[0]);
+        Assert.NotNull(view.Exclude);
+        Assert.Equal(ViewFilterKind.Tagged, view.Exclude!.Kind);
+        Assert.Equal("internal-only", view.Exclude.TagValue);
+    }
+
+    [Fact]
+    public void Parse_ViewDecl_WithExplicitFilter()
+    {
+        var doc = ParseSource(@"
+view systemContext of App Filtered {
+    include: [Analyst, App, Gateway];
+}");
+        Assert.Single(doc.Declarations);
+        var view = Assert.IsType<ViewDecl>(doc.Declarations[0]);
+        Assert.NotNull(view.Include);
+        Assert.Equal(ViewFilterKind.Explicit, view.Include!.Kind);
+        Assert.Equal(3, view.Include.ExplicitElements.Count);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  DYNAMIC SPECIFICATION TESTS
+    // ═══════════════════════════════════════════════════════════════
+
+    [Fact]
+    public void Parse_DynamicDecl_SimpleSteps()
+    {
+        var doc = ParseSource(@"
+dynamic PlaceOrder {
+    1: User -> App : ""Opens form."";
+    2: App -> Engine : ""Processes order."";
+    3: Engine -> App : ""Returns result."";
+}");
+        Assert.Single(doc.Declarations);
+        var dyn = Assert.IsType<DynamicDecl>(doc.Declarations[0]);
+        Assert.Equal("PlaceOrder", dyn.Name);
+        Assert.Equal(3, dyn.Steps.Count);
+        Assert.Equal(1, dyn.Steps[0].SequenceNumber);
+        Assert.Equal("User", dyn.Steps[0].Source);
+        Assert.Equal("App", dyn.Steps[0].Target);
+        Assert.Equal("Opens form.", dyn.Steps[0].Description);
+    }
+
+    [Fact]
+    public void Parse_DynamicDecl_BlockSteps()
+    {
+        var doc = ParseSource(@"
+dynamic FetchData {
+    1: App -> Gateway {
+        description: ""Fetches data."";
+        technology: ""REST/HTTPS"";
+    };
+}");
+        Assert.Single(doc.Declarations);
+        var dyn = Assert.IsType<DynamicDecl>(doc.Declarations[0]);
+        Assert.Single(dyn.Steps);
+        Assert.Equal("Fetches data.", dyn.Steps[0].Description);
+        Assert.Equal("REST/HTTPS", dyn.Steps[0].Technology);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  ENRICHED TOPOLOGY EDGE TESTS
+    // ═══════════════════════════════════════════════════════════════
+
+    [Fact]
+    public void Parse_TopologyRule_EnrichedEdge()
+    {
+        var doc = ParseSource(@"
+topology Deps {
+    allow App -> Gateway {
+        technology: ""REST/HTTPS"";
+        description: ""Fetches transactions."";
+    }
+    deny UI -> Engine;
+}");
+        Assert.Single(doc.Declarations);
+        var topo = Assert.IsType<TopologyDecl>(doc.Declarations[0]);
+        Assert.Equal(2, topo.Rules.Count);
+
+        var enriched = topo.Rules[0];
+        Assert.Equal(TopologyRuleKind.Allow, enriched.Kind);
+        Assert.Equal("REST/HTTPS", enriched.Technology);
+        Assert.Equal("Fetches transactions.", enriched.Description);
+
+        var simple = topo.Rules[1];
+        Assert.Equal(TopologyRuleKind.Deny, simple.Kind);
+        Assert.Null(simple.Technology);
+        Assert.Null(simple.Description);
     }
 }

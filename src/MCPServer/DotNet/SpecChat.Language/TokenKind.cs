@@ -83,6 +83,25 @@ public enum TokenKind
     KwExisting,
     KwNew,
 
+    // ── Context specification keywords ────────────────────────
+    KwPerson,
+    KwExternal,
+    KwDescription,
+    KwTechnology,
+    KwTag,
+
+    // ── Deployment specification keywords ────────────────────
+    KwDeployment,
+    KwNode,
+    KwInstance,
+
+    // ── View and dynamic specification keywords ─────────────
+    KwView,
+    KwInclude,
+    KwExclude,
+    KwAutoLayout,
+    KwDynamic,
+
     // ── Design specification keywords ────────────────────────
     KwPage,
     KwHost,

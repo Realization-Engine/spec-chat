@@ -75,11 +75,15 @@ public sealed record TopologyDecl(
 
 /// <summary>
 /// A single allow or deny rule in a topology: Source -> Target.
+/// The block form adds optional description, technology, and rationale.
 /// </summary>
 public sealed record TopologyRule(
     TopologyRuleKind Kind,
     string Source,
     string Target,
+    string? Description,
+    string? Technology,
+    List<RationaleDecl> Rationales,
     SourceLocation Location) : AstNode(Location);
 
 // ── Phase ────────────────────────────────────────────────────────────

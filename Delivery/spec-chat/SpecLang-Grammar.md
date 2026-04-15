@@ -10,9 +10,12 @@
 
 This document defines the formal grammar of the SpecChat specification language. It provides the lexer token definitions, the expression language grammar, and the full DSL grammar in EBNF notation, precise enough for a recursive descent parser implementation in C#.
 
-The grammar covers both layers of specification:
+The grammar covers five layers of specification:
 - **Data specification:** entities, enums, contracts, refinements, invariants, rationale, confidence signals
+- **Context specification:** persons, external systems, relationships, tags
 - **Systems specification:** system trees, authored/consumed components, topology, phases, traces, constraints, package policies, platform realization
+- **Deployment specification:** deployment environments, infrastructure nodes, component instances
+- **View and dynamic specification:** architectural views with include/exclude filters, behavioral interaction sequences
 
 ---
 
@@ -120,6 +123,19 @@ KW_PATH         = "path"
 KW_STATUS       = "status"
 KW_EXISTING     = "existing"
 KW_NEW          = "new"
+KW_PERSON       = "person"
+KW_EXTERNAL     = "external"
+KW_DESCRIPTION  = "description"
+KW_TECHNOLOGY   = "technology"
+KW_DEPLOYMENT   = "deployment"
+KW_NODE         = "node"
+KW_INSTANCE     = "instance"
+KW_VIEW         = "view"
+KW_INCLUDE      = "include"
+KW_EXCLUDE      = "exclude"
+KW_AUTOLAYOUT   = "autoLayout"
+KW_DYNAMIC      = "dynamic"
+KW_TAG          = "tag"
 ```
 
 #### Design specification keywords
@@ -388,6 +404,9 @@ TopLevelDecl    = EntityDecl
                 | EnumDecl
                 | ContractDecl
                 | RefinementDecl
+                | PersonDecl
+                | ExternalSystemDecl
+                | RelationshipDecl
                 | SystemDecl
                 | TopologyDecl
                 | PhaseDecl
@@ -395,6 +414,9 @@ TopLevelDecl    = EntityDecl
                 | ConstraintDecl
                 | PackagePolicyDecl
                 | DotNetSolutionDecl
+                | DeploymentDecl
+                | ViewDecl
+                | DynamicDecl
                 | PageDecl
                 | VisualizationDecl ;
 ```
@@ -433,7 +455,11 @@ ContextualKeyword = "source" | "version" | "target" | "kind"
                   | "path" | "status" | "existing" | "new"
                   | "page" | "host" | "route" | "concepts"
                   | "role" | "cross_links"
-                  | "visualization" | "parameters" | "sliders" ;
+                  | "visualization" | "parameters" | "sliders"
+                  | "person" | "external" | "description"
+                  | "technology" | "deployment" | "node"
+                  | "instance" | "view" | "include" | "exclude"
+                  | "autoLayout" | "dynamic" | "tag" ;
 
 (* ===== Type expressions ===== *)
 
@@ -534,7 +560,89 @@ RationaleDecl   = "rationale" STRING ";"
    Disambiguation: see §5.5. *)
 ```
 
-### 3.3 Systems specification productions
+### 3.3 Context specification productions
+
+```ebnf
+(* ===== Context specification: people and external systems =====
+   
+   C4 Model Level 1 (System Context) identifies who uses
+   the system and what external systems it interacts with
+   before decomposing internals. Person and external system
+   declarations provide the outermost zoom level. They
+   answer: "Who uses this system, and what does it talk to?"
+   
+   Relationship declarations connect persons, external
+   systems, and internal systems with labeled, directional
+   edges that carry description and technology. *)
+
+(* ===== Person: a human user or actor ===== *)
+
+PersonDecl      = "person" DOTTED_IDENT "{"
+                    { PersonProperty }
+                  "}" ;
+
+PersonProperty  = "description" ":" STRING ";"
+                | TagAnnotation
+                | RationaleDecl ;
+
+(* ===== External system: a system outside our boundary ===== *)
+
+ExternalSystemDecl
+                = "external" "system" DOTTED_IDENT "{"
+                    { ExternalSystemProperty }
+                  "}" ;
+
+ExternalSystemProperty
+                = "description" ":" STRING ";"
+                | "technology" ":" STRING ";"
+                | TagAnnotation
+                | RationaleDecl ;
+
+(* ===== Relationship: labeled directional edge ===== *)
+
+RelationshipDecl
+                = DOTTED_IDENT "->" DOTTED_IDENT "{"
+                    { RelationshipProperty }
+                  "}" 
+                | DOTTED_IDENT "->" DOTTED_IDENT ":"
+                    STRING ";" ;
+
+(* Short form: Source -> Target : "description";
+   Block form: Source -> Target { description: "..."; technology: "..."; }
+
+   The short form is syntactic sugar for the common case
+   where only a description is needed. The parser
+   distinguishes from topology allow/deny rules by parent
+   context: RelationshipDecl appears at the top level,
+   while allow/deny rules appear inside a topology block.
+   See §5.17 for disambiguation. *)
+
+RelationshipProperty
+                = "description" ":" STRING ";"
+                | "technology" ":" STRING ";"
+                | TagAnnotation
+                | RationaleDecl ;
+
+(* ===== Tag annotation: general-purpose element tagging ===== *)
+
+TagAnnotation   = "@" "tag" "(" StringList ")" ";" ;
+
+(* Tags are a general-purpose classification mechanism
+   that works across all registers. Any declaration that
+   includes TagAnnotation in its property list can be tagged.
+   Tags are used by view declarations to include/exclude
+   elements by classification.
+   
+   Example: @tag("frontend", "blazor");
+   
+   The tag annotation uses the existing "@" Annotation syntax
+   but is listed as a separate production because it accepts
+   a StringList (multiple tags) rather than a single
+   AnnotationValue. Semantic analysis validates that tag
+   values are non-empty strings. *)
+```
+
+### 3.4 Systems specification productions
 
 ```ebnf
 (* ===== System: root of the decomposition tree ===== *)
@@ -662,9 +770,33 @@ TopologyDecl    = "topology" DOTTED_IDENT "{"
                   "}" ;
 
 TopologyMember  = "allow" DOTTED_IDENT "->" DOTTED_IDENT ";"
+                | "allow" DOTTED_IDENT "->" DOTTED_IDENT "{"
+                    { TopologyEdgeProperty } "}"
                 | "deny"  DOTTED_IDENT "->" DOTTED_IDENT ";"
+                | "deny"  DOTTED_IDENT "->" DOTTED_IDENT "{"
+                    { TopologyEdgeProperty } "}"
                 | InvariantDecl
                 | RationaleDecl ;
+
+TopologyEdgeProperty
+                = "description" ":" STRING ";"
+                | "technology" ":" STRING ";"
+                | RationaleDecl ;
+
+(* Topology edges may optionally carry a block with description,
+   technology, and rationale. The block form enriches the edge
+   with communication protocol and intent. The simple semicolon
+   form remains valid for brevity.
+   
+   Example (simple):   allow Dashboard.App -> Analytics.Engine;
+   Example (enriched): allow Dashboard.App -> PaymentGateway {
+                          technology: "REST/HTTPS";
+                          description: "Fetches transaction history.";
+                        }
+   
+   Disambiguation: after "allow"/"deny" DOTTED_IDENT "->" DOTTED_IDENT,
+   the parser peeks at the next token. If ";" -> simple form.
+   If "{" -> block form. See §5.18. *)
 
 (* ===== Phase: ordered construction with gates ===== *)
 
@@ -777,7 +909,200 @@ SolutionFolderDecl
 
 ```
 
-### 3.4 Design specification productions
+### 3.5 Deployment specification productions
+
+```ebnf
+(* ===== Deployment: infrastructure mapping =====
+
+   Deployment declarations map the logical system (containers
+   and components) onto physical or virtual infrastructure.
+   Each deployment block represents a named environment
+   (Production, Staging, Development). Deployment nodes
+   represent infrastructure elements: servers, cloud services,
+   container orchestrators, Kubernetes pods, etc. Nodes
+   nest to model infrastructure hierarchy (cloud region
+   contains a cluster, cluster contains a pod, pod contains
+   a container instance).
+
+   Instance declarations within nodes reference authored
+   components from the system tree, creating a traceable
+   link from logical architecture to operational topology.
+
+   This corresponds to C4 Model deployment diagrams:
+   the bridge between logical architecture and operational
+   reality. *)
+
+DeploymentDecl  = "deployment" DOTTED_IDENT "{"
+                    { DeploymentMember }
+                  "}" ;
+
+DeploymentMember
+                = DeploymentNodeDecl
+                | RationaleDecl ;
+
+DeploymentNodeDecl
+                = "node" STRING "{"
+                    { DeploymentNodeProperty }
+                  "}" ;
+
+(* Nodes use STRING names (not IDENT) because infrastructure
+   names often contain spaces, dots, or special characters:
+   "Azure App Service", "us-east-1", "k8s-prod-cluster".
+   Nodes may nest to represent infrastructure hierarchy. *)
+
+DeploymentNodeProperty
+                = "technology" ":" STRING ";"
+                | "instance" ":" DOTTED_IDENT ";"
+                | DeploymentNodeDecl
+                | TagAnnotation
+                | RationaleDecl ;
+
+(* "instance" references an authored component declared in
+   the system tree. It is the link between the logical
+   component and the infrastructure node that hosts it.
+   A node may contain multiple instances and/or child nodes.
+
+   Example:
+   deployment Production {
+       node "Azure App Service" {
+           technology: "Linux/P1v3";
+           instance: Analytics.App;
+       }
+       node "Azure SQL" {
+           technology: "SQL Database S3";
+           instance: Dashboard.Database;
+       }
+   }
+*)
+```
+
+### 3.6 View specification productions
+
+```ebnf
+(* ===== Views: model-to-diagram projections =====
+
+   View declarations define which subset of the model to
+   render as a diagram. This implements the Structurizr
+   principle of model-vs-views separation: the model
+   (systems, components, persons, external systems,
+   deployment nodes) is defined once; views select subsets
+   for visualization.
+
+   Views are not rendering instructions. They are
+   specification-level declarations of what to show. The
+   projection layer decides how to render them (Mermaid,
+   DOT, Structurizr, etc.).
+
+   View scoping:
+   - "of DOTTED_IDENT" scopes to a declared system,
+     component, or deployment environment
+   - ViewKind determines the zoom level and diagram type *)
+
+ViewDecl        = "view" ViewKind [ "of" DOTTED_IDENT ]
+                    DOTTED_IDENT "{"
+                    { ViewProperty }
+                  "}" ;
+
+ViewKind        = "systemLandscape"
+                | "systemContext"
+                | "container"
+                | "component"
+                | "deployment" ;
+
+(* ViewKind determines what abstraction level the view
+   renders:
+   - systemLandscape: all persons, systems, external systems
+   - systemContext: one system with its connections
+   - container: containers within a system
+   - component: components within a container
+   - deployment: infrastructure nodes for an environment
+
+   The "of" clause scopes the view:
+   - systemContext requires "of <system>"
+   - container requires "of <system>"
+   - component requires "of <container>"
+   - deployment requires "of <deployment-environment>"
+   - systemLandscape does not use "of" *)
+
+ViewProperty    = "include" ":" ViewFilterExpr ";"
+                | "exclude" ":" ViewFilterExpr ";"
+                | "autoLayout" ":" LayoutDirection ";"
+                | "description" ":" STRING ";"
+                | TagAnnotation
+                | RationaleDecl ;
+
+ViewFilterExpr  = "all"
+                | "tagged" STRING
+                | "[" IdentList "]" ;
+
+(* View filters select elements for inclusion or exclusion:
+   - "all": include/exclude everything in scope
+   - "tagged" STRING: elements carrying a matching @tag
+   - "[" IdentList "]": explicit element list by name
+
+   Example:
+   view systemContext of AnalyticsDashboard SystemContextView {
+       include: all;
+       exclude: tagged "internal-only";
+       autoLayout: top-down;
+   }
+*)
+
+LayoutDirection = "top-down" | "left-right"
+                | "bottom-up" | "right-left" ;
+
+(* Layout is a hint to the rendering engine, not a precise
+   constraint. Renderers may adjust layout for readability.
+   Quoted because hyphenated values are not valid IDENTs. *)
+```
+
+### 3.7 Dynamic specification productions
+
+```ebnf
+(* ===== Dynamic: behavioral interaction sequences =====
+
+   Dynamic declarations capture runtime behavior by showing
+   how elements collaborate to fulfill a specific use case
+   or scenario. Each step is a numbered interaction between
+   two elements with a description and optional technology.
+
+   This corresponds to C4 dynamic diagrams and fills the
+   gap between static topology (who may depend on whom) and
+   runtime flow (how a specific request moves through the
+   system). Topology defines the rules; dynamic declarations
+   show how a scenario exercises those rules. *)
+
+DynamicDecl     = "dynamic" DOTTED_IDENT "{"
+                    { DynamicStep }
+                  "}" ;
+
+DynamicStep     = INTEGER ":" DOTTED_IDENT "->" DOTTED_IDENT
+                    ":" STRING [ ";" ]
+                | INTEGER ":" DOTTED_IDENT "->" DOTTED_IDENT
+                    "{" { DynamicStepProperty } "}" ;
+
+DynamicStepProperty
+                = "description" ":" STRING ";"
+                | "technology" ":" STRING ";" ;
+
+(* Each step carries a sequence number, source, target,
+   and description. The sequence number is part of the
+   specification (not inferred by position) so that steps
+   can be reordered in the source without changing the
+   declared sequence.
+
+   Simple form: 1: Analyst -> Dashboard.App : "Submits filter parameters.";
+   Block form:  2: Dashboard.App -> Analytics.Engine {
+                    description: "Requests revenue computation.";
+                    technology: "method call";
+                }
+
+   Dynamic declarations reference persons, external systems,
+   and components from the model. Semantic analysis validates
+   that all participants are declared. *)
+```
+
+### 3.8 Design specification productions
 
 ```ebnf
 (* ===== Design specification: pages and visualizations ===== *)
@@ -856,6 +1181,15 @@ Every grammar production corresponds to an AST node type defined in the SpecChat
 | RationaleDecl | `RationaleDecl` (SimpleRationale or StructuredRationale) |
 | Expr and sub-productions | `Expr` (BinaryExpr, UnaryExpr, MemberAccessExpr, IdentifierExpr, LiteralExpr, InExpr, CallExpr, QuantifierExpr, ListExpr) |
 
+### Context specification nodes
+
+| Grammar Production | AST Node (SpecChat.Core) |
+|---|---|
+| PersonDecl | `PersonDecl` |
+| ExternalSystemDecl | `ExternalSystemDecl` |
+| RelationshipDecl | `RelationshipDecl` |
+| TagAnnotation | `TagAnnotation` (list of tag strings, attachable to any tagged declaration) |
+
 ### Systems specification nodes
 
 | Grammar Production | AST Node (SpecChat.Core) |
@@ -866,7 +1200,8 @@ Every grammar production corresponds to an AST node type defined in the SpecChat
 | InlineContractDecl | `ContractDecl` (unnamed, parent reference to component) |
 | SourceExpr | within `ConsumedComponentDecl` |
 | TopologyDecl | `TopologyDecl` |
-| allow/deny rules | `DependencyRule` |
+| allow/deny rules | `DependencyRule` (with optional `Description`, `Technology`, `RationaleDecl`) |
+| TopologyEdgeProperty | within `DependencyRule` |
 | PhaseDecl | `PhaseDecl` |
 | GateDecl | `GateDecl` |
 | TraceDecl | `TraceDecl` |
@@ -877,6 +1212,27 @@ Every grammar production corresponds to an AST node type defined in the SpecChat
 | DotNetSolutionDecl | `DotNetSolutionDecl` |
 | SolutionFolderDecl | `SolutionFolderDecl` |
 
+### Deployment specification nodes
+
+| Grammar Production | AST Node (SpecChat.Core) |
+|---|---|
+| DeploymentDecl | `DeploymentDecl` |
+| DeploymentNodeDecl | `DeploymentNodeDecl` (recursive: nodes contain child nodes) |
+
+### View specification nodes
+
+| Grammar Production | AST Node (SpecChat.Core) |
+|---|---|
+| ViewDecl | `ViewDecl` |
+| ViewFilterExpr | `ViewFilter` (AllFilter, TaggedFilter, ExplicitFilter) |
+
+### Dynamic specification nodes
+
+| Grammar Production | AST Node (SpecChat.Core) |
+|---|---|
+| DynamicDecl | `DynamicDecl` |
+| DynamicStep | `DynamicStep` |
+
 ### Design specification nodes
 
 | Grammar Production | AST Node (SpecChat.Core) |
@@ -886,7 +1242,7 @@ Every grammar production corresponds to an AST node type defined in the SpecChat
 | ParameterBinding | `ParameterBindingDecl` |
 | (prose context) | `ProseIntent` (not a grammar production; assembled by the markdown extractor) |
 
-All AST node types in the specification have corresponding grammar productions. Helper productions that do not map to dedicated AST types: FieldName, ContextualKeyword, AnnotationName, AnnotationValue, RangeValue, TargetValue, KindValue, StatusValue, ScopeWord, ScopeRef, ScopeExpr, PhaseRefList, GateProperty, GateExpectsList, GateExpect, PolicyDefault, StringList, IdentList, ParametersBlock. These are structural sub-parts of larger nodes.
+All AST node types in the specification have corresponding grammar productions. Helper productions that do not map to dedicated AST types: FieldName, ContextualKeyword, AnnotationName, AnnotationValue, RangeValue, TargetValue, KindValue, StatusValue, ScopeWord, ScopeRef, ScopeExpr, PhaseRefList, GateProperty, GateExpectsList, GateExpect, PolicyDefault, StringList, IdentList, ParametersBlock, PersonProperty, ExternalSystemProperty, RelationshipProperty, TopologyEdgeProperty, DeploymentMember, DeploymentNodeProperty, ViewKind, ViewProperty, ViewFilterExpr, LayoutDirection, DynamicStepProperty. These are structural sub-parts of larger nodes.
 
 ---
 
@@ -983,6 +1339,30 @@ Prose within a context becomes `ProseIntent` nodes associated with the parent `P
 
 `page` appears in two contexts: as a top-level declaration keyword (`page ExecutiveDashboard { ... }`) and as a property within a visualization (`page: ExecutiveDashboard;`). Resolution: by parent context. At the top level (or in a PageContext), `page` followed by DOTTED_IDENT `{` starts a PageDecl. Inside a `visualization { }` block, `page` followed by `:` is a VisualizationProperty. The second token (`:` vs. DOTTED_IDENT) disambiguates.
 
+### 5.17 RelationshipDecl vs. TopologyMember vs. TraceMember
+
+`DOTTED_IDENT "->" DOTTED_IDENT` appears in three contexts: top-level relationship declarations, topology allow/deny rules, and trace member mappings. Resolution: by parent context. At the top level, `DOTTED_IDENT "->"` starts a RelationshipDecl. Inside a `topology { }` block, `allow` or `deny` precedes the arrow, so it is a TopologyMember. Inside a `trace { }` block, the arrow is followed by `"[" IdentList "]"` (a target list), making it a TraceMember. The top-level RelationshipDecl is the only context where a bare `DOTTED_IDENT` (without a leading keyword) starts a declaration; the parser recognizes this by process of elimination after checking all keyword-led alternatives.
+
+### 5.18 Topology edge: simple vs. block form
+
+After `allow`/`deny` DOTTED_IDENT `->` DOTTED_IDENT, the parser peeks at the next token. If `;`, the edge is the simple form (no properties). If `{`, the edge has a property block containing description, technology, and/or rationale. This is the same peek-ahead pattern used for rationale disambiguation (§5.5).
+
+### 5.19 `external system` two-word keyword
+
+`external system` is a two-word keyword sequence, handled at the parser level like `authored component` and `consumed component`. The lexer emits KW_EXTERNAL + KW_SYSTEM as separate tokens. The parser, upon seeing KW_EXTERNAL, expects KW_SYSTEM to follow and then consumes the ExternalSystemDecl production.
+
+### 5.20 `deployment` keyword in ViewKind vs. DeploymentDecl
+
+`deployment` appears as both a top-level declaration (`deployment Production { ... }`) and as a ViewKind value (`view deployment of Production ...`). Resolution: at the top level, `deployment` followed by DOTTED_IDENT `{` starts a DeploymentDecl. Inside a `view` declaration, `deployment` appears as the ViewKind before the optional `of` clause. The parser distinguishes by context: after `view`, the next token is a ViewKind; at the top level, it starts a DeploymentDecl.
+
+### 5.21 `@tag` annotation vs. standard annotations
+
+`@tag("frontend", "blazor")` uses a StringList (multiple values) rather than a single AnnotationValue. The parser distinguishes by annotation name: after `@`, if the next token is `tag`, the parser uses the TagAnnotation production (expecting `"(" StringList ")"`). For all other annotation names, it uses the standard Annotation production (expecting `"(" AnnotationValue ")"`). This is safe because `tag` is reserved as KW_TAG and will not appear as an annotation name in any other context.
+
+### 5.22 DynamicStep sequence number vs. other INTEGER contexts
+
+Inside a `dynamic { }` block, each step begins with `INTEGER ":"`. This is unambiguous because no other production inside a dynamic block starts with INTEGER, and the `:` after INTEGER distinguishes it from an expression context where INTEGER might appear as a literal.
+
 ---
 
 ## 6. Implementation Notes
@@ -1013,7 +1393,7 @@ The parser should support two modes:
 - **Strict mode** (default): first error halts parsing; returns diagnostics.
 - **Lenient mode** (for IDE/quality feedback): on error, skip tokens until a synchronization point (next `}` at the expected nesting depth, or next keyword that starts a top-level declaration), record a diagnostic, and continue parsing.
 
-Synchronization points are top-level keywords: `entity`, `enum`, `contract`, `refines`, `system`, `topology`, `phase`, `trace`, `constraint`, `package_policy`, `dotnet`, `page`, `visualization`.
+Synchronization points are top-level keywords: `entity`, `enum`, `contract`, `refines`, `person`, `external`, `system`, `topology`, `phase`, `trace`, `constraint`, `package_policy`, `dotnet`, `deployment`, `view`, `dynamic`, `page`, `visualization`.
 
 ### 6.3 Contextual keyword handling
 
@@ -1021,7 +1401,7 @@ The parser maintains a set of ContextualKeyword tokens that are accepted as iden
 
 ### 6.4 Known limitation: keyword breadth
 
-SpecChat reserves 76 keywords. The ContextualKeyword mechanism (§5.12) handles the most common collisions: words like `source`, `version`, `target`, `kind` can be used as field names because they only have keyword meaning in specific declaration contexts and the parser can distinguish by position.
+SpecChat reserves 89 keywords. The ContextualKeyword mechanism (§5.12) handles the most common collisions: words like `source`, `version`, `target`, `kind` can be used as field names because they only have keyword meaning in specific declaration contexts and the parser can distinguish by position.
 
 Two categories of keywords CANNOT be used as field names and are permanently reserved:
 

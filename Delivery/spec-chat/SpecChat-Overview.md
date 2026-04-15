@@ -8,17 +8,23 @@ This document explains how the system is put together: the critical files, their
 
 Two files define what SpecLang is and how it works.
 
-1. **SpecLang-Specification.md** defines the language itself: what constructs exist (entities, components, topology, phases, traces, constraints, contracts, package policies, platform realization, pages, visualizations, rationale), what they mean, and how they compose. This is the "what can you say" document.
+1. **SpecLang-Specification.md** defines the language itself: what constructs exist across five registers (data, context, systems, deployment, view/dynamic, design), what they mean, and how they compose. This is the "what can you say" document.
 
 2. **SpecLang-Grammar.md** defines how to parse it: lexer tokens, expression precedence, production rules, ambiguity resolution. This is the "how do you say it" document.
 
-A human or LLM reads these two files and knows the full vocabulary and syntax of specification.
+A human or LLM reads these two files and knows the full vocabulary and syntax of specification. The five registers cover the full architectural scope from stakeholder to server:
+- **Data:** entities, enums, contracts, invariants, confidence signals, rationale
+- **Context:** persons (human actors), external systems, relationships, tags
+- **Systems:** authored/consumed components, topology, phases, traces, constraints, package policies, platform realization
+- **Deployment:** environments, infrastructure nodes, component instances
+- **View/Dynamic:** architectural diagram projections at multiple zoom levels, behavioral interaction sequences
+- **Design:** pages, visualizations, parameter bindings, prose intent
 
 ## Layer 2: The System Specification
 
 One file declares the system being built.
 
-3. **samples/blazor-harness.spec.md** is the base system spec. It uses the language from Layer 1 to declare a specific system: its components, their topology (who can call whom, who cannot), the build phases with gate conditions, the data entities, the page declarations with visualization bindings, and the traceability mappings. This is the system skeleton. Everything about the system's structure lives here.
+3. **samples/blazor-harness.spec.md** is the base system spec. It uses the language from Layer 1 to declare a specific system: its persons and external systems (who uses it, what it talks to), its components and their topology (who can call whom, who cannot), the build phases with gate conditions, the deployment topology (where each part runs), views at multiple zoom levels, dynamic interaction sequences, the data entities, the page declarations with visualization bindings, and the traceability mappings. This is the system skeleton. Everything about the system's structure lives here.
 
 This file is what an LLM reads to understand the system well enough to generate or modify source code. It replaces the original design documents.
 

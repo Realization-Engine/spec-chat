@@ -105,10 +105,12 @@ public sealed partial class Parser
     private static bool IsTopLevelKeyword(TokenKind kind) => kind switch
     {
         TokenKind.KwEntity or TokenKind.KwEnum or TokenKind.KwContract
-            or TokenKind.KwRefines or TokenKind.KwSystem or TokenKind.KwTopology
+            or TokenKind.KwRefines or TokenKind.KwPerson or TokenKind.KwExternal
+            or TokenKind.KwSystem or TokenKind.KwTopology
             or TokenKind.KwPhase or TokenKind.KwTrace or TokenKind.KwConstraint
-            or TokenKind.KwPackagePolicy or TokenKind.KwDotnet or TokenKind.KwPage
-            or TokenKind.KwVisualization
+            or TokenKind.KwPackagePolicy or TokenKind.KwDotnet
+            or TokenKind.KwDeployment or TokenKind.KwView or TokenKind.KwDynamic
+            or TokenKind.KwPage or TokenKind.KwVisualization
             or TokenKind.KwArchitecture or TokenKind.KwLayerContract => true,
         _ => false,
     };
@@ -134,6 +136,12 @@ public sealed partial class Parser
             or TokenKind.KwRoute or TokenKind.KwConcepts or TokenKind.KwRole
             or TokenKind.KwCrossLinks or TokenKind.KwVisualization
             or TokenKind.KwParameters or TokenKind.KwSliders
+            // Context, deployment, view, dynamic keywords (contextual in field-name positions)
+            or TokenKind.KwPerson or TokenKind.KwExternal or TokenKind.KwDescription
+            or TokenKind.KwTechnology or TokenKind.KwDeployment or TokenKind.KwNode
+            or TokenKind.KwInstance or TokenKind.KwView or TokenKind.KwInclude
+            or TokenKind.KwExclude or TokenKind.KwAutoLayout or TokenKind.KwDynamic
+            or TokenKind.KwTag
             // Additional keywords that appear as parameter names or field names
             // in real-world specs (not in the grammar's ContextualKeyword list
             // but needed to prevent parse failures in ParameterBinding positions).
@@ -241,12 +249,22 @@ public sealed partial class Parser
 
     private TopLevelDecl? ParseTopLevelDecl()
     {
+        // Check for bare relationship: DOTTED_IDENT -> ... at top level (§5.17)
+        if ((Peek().Kind == TokenKind.Ident || Peek().Kind == TokenKind.DottedIdent)
+            && PeekAhead(1).Kind == TokenKind.Arrow)
+        {
+            return ParseRelationshipDecl();
+        }
+
         return Peek().Kind switch
         {
             TokenKind.KwEntity => ParseEntityDecl(),
             TokenKind.KwEnum => ParseEnumDecl(),
             TokenKind.KwContract => ParseContractDecl(),
             TokenKind.KwRefines => ParseRefinementDecl(),
+            TokenKind.KwPerson => ParsePersonDecl(),
+            TokenKind.KwExternal when PeekAhead(1).Kind == TokenKind.KwSystem
+                => ParseExternalSystemDecl(),
             TokenKind.KwSystem => ParseSystemDecl(),
             TokenKind.KwTopology => ParseTopologyDecl(),
             TokenKind.KwPhase => ParsePhaseDecl(),
@@ -255,6 +273,9 @@ public sealed partial class Parser
             TokenKind.KwPackagePolicy => ParsePackagePolicyDecl(),
             TokenKind.KwDotnet when PeekAhead(1).Kind == TokenKind.KwSolution
                 => ParseDotNetSolutionDecl(),
+            TokenKind.KwDeployment => ParseDeploymentDecl(),
+            TokenKind.KwView => ParseViewDecl(),
+            TokenKind.KwDynamic => ParseDynamicDecl(),
             TokenKind.KwPage => ParsePageDecl(),
             TokenKind.KwVisualization => ParseVisualizationDecl(),
             TokenKind.KwArchitecture => ParseArchitectureDecl(),
@@ -1027,8 +1048,49 @@ public sealed partial class Parser
                 string source = ExpectName();
                 Expect(TokenKind.Arrow);
                 string target = ExpectName();
-                Expect(TokenKind.Semicolon);
-                rules.Add(new TopologyRule(ruleKind, source, target, rLoc));
+
+                // Simple form (;) or block form ({) for enriched edges (§5.18)
+                string? edgeDesc = null;
+                string? edgeTech = null;
+                var edgeRationales = new List<RationaleDecl>();
+
+                if (Check(TokenKind.LBrace))
+                {
+                    Advance(); // consume {
+                    while (!Check(TokenKind.RBrace) && !IsAtEnd)
+                    {
+                        if (Check(TokenKind.KwDescription))
+                        {
+                            Advance();
+                            Expect(TokenKind.Colon);
+                            edgeDesc = ExpectStringContent();
+                            Expect(TokenKind.Semicolon);
+                        }
+                        else if (Check(TokenKind.KwTechnology))
+                        {
+                            Advance();
+                            Expect(TokenKind.Colon);
+                            edgeTech = ExpectStringContent();
+                            Expect(TokenKind.Semicolon);
+                        }
+                        else if (Check(TokenKind.KwRationale))
+                        {
+                            edgeRationales.Add(ParseRationaleDecl());
+                        }
+                        else
+                        {
+                            ReportError($"Unexpected token in topology edge body: {Peek().Kind}");
+                            Synchronize();
+                        }
+                    }
+                    Expect(TokenKind.RBrace);
+                }
+                else
+                {
+                    Expect(TokenKind.Semicolon);
+                }
+
+                rules.Add(new TopologyRule(ruleKind, source, target, edgeDesc, edgeTech, edgeRationales, rLoc));
             }
             else if (Check(TokenKind.KwInvariant))
             {
@@ -1466,6 +1528,520 @@ public sealed partial class Parser
 
         Expect(TokenKind.RBrace);
         return new SolutionFolderDecl(folderName, projects, rationales, loc);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  CONTEXT SPECIFICATION PRODUCTIONS
+    // ═══════════════════════════════════════════════════════════════
+
+    // ── Person ─────────────────────────────────────────────────────
+
+    private PersonDecl ParsePersonDecl()
+    {
+        var loc = CurrentLocation();
+        Expect(TokenKind.KwPerson);
+        string name = ExpectName();
+        Expect(TokenKind.LBrace);
+
+        string description = "";
+        var tags = new List<string>();
+        var rationales = new List<RationaleDecl>();
+
+        while (!Check(TokenKind.RBrace) && !IsAtEnd)
+        {
+            if (Check(TokenKind.KwDescription))
+            {
+                Advance();
+                Expect(TokenKind.Colon);
+                description = ExpectStringContent();
+                Expect(TokenKind.Semicolon);
+            }
+            else if (Check(TokenKind.At) && PeekAhead(1).Kind == TokenKind.KwTag)
+            {
+                tags.AddRange(ParseTagAnnotation().Values);
+            }
+            else if (Check(TokenKind.KwRationale))
+            {
+                rationales.Add(ParseRationaleDecl());
+            }
+            else
+            {
+                ReportError($"Unexpected token in person body: {Peek().Kind}");
+                Synchronize();
+            }
+        }
+
+        Expect(TokenKind.RBrace);
+        return new PersonDecl(name, description, tags, rationales, loc);
+    }
+
+    // ── External system ────────────────────────────────────────────
+
+    private ExternalSystemDecl ParseExternalSystemDecl()
+    {
+        var loc = CurrentLocation();
+        Expect(TokenKind.KwExternal);
+        Expect(TokenKind.KwSystem);
+        string name = ExpectName();
+        Expect(TokenKind.LBrace);
+
+        string description = "";
+        string? technology = null;
+        var tags = new List<string>();
+        var rationales = new List<RationaleDecl>();
+
+        while (!Check(TokenKind.RBrace) && !IsAtEnd)
+        {
+            if (Check(TokenKind.KwDescription))
+            {
+                Advance();
+                Expect(TokenKind.Colon);
+                description = ExpectStringContent();
+                Expect(TokenKind.Semicolon);
+            }
+            else if (Check(TokenKind.KwTechnology))
+            {
+                Advance();
+                Expect(TokenKind.Colon);
+                technology = ExpectStringContent();
+                Expect(TokenKind.Semicolon);
+            }
+            else if (Check(TokenKind.At) && PeekAhead(1).Kind == TokenKind.KwTag)
+            {
+                tags.AddRange(ParseTagAnnotation().Values);
+            }
+            else if (Check(TokenKind.KwRationale))
+            {
+                rationales.Add(ParseRationaleDecl());
+            }
+            else
+            {
+                ReportError($"Unexpected token in external system body: {Peek().Kind}");
+                Synchronize();
+            }
+        }
+
+        Expect(TokenKind.RBrace);
+        return new ExternalSystemDecl(name, description, technology, tags, rationales, loc);
+    }
+
+    // ── Relationship ───────────────────────────────────────────────
+
+    private RelationshipDecl ParseRelationshipDecl()
+    {
+        var loc = CurrentLocation();
+        string source = ExpectName();
+        Expect(TokenKind.Arrow);
+        string target = ExpectName();
+
+        string description;
+        string? technology = null;
+        var tags = new List<string>();
+        var rationales = new List<RationaleDecl>();
+
+        if (Check(TokenKind.Colon))
+        {
+            // Short form: Source -> Target : "description";
+            Advance();
+            description = ExpectStringContent();
+            Expect(TokenKind.Semicolon);
+        }
+        else if (Check(TokenKind.LBrace))
+        {
+            // Block form: Source -> Target { description: "..."; technology: "..."; }
+            Advance();
+            description = "";
+
+            while (!Check(TokenKind.RBrace) && !IsAtEnd)
+            {
+                if (Check(TokenKind.KwDescription))
+                {
+                    Advance();
+                    Expect(TokenKind.Colon);
+                    description = ExpectStringContent();
+                    Expect(TokenKind.Semicolon);
+                }
+                else if (Check(TokenKind.KwTechnology))
+                {
+                    Advance();
+                    Expect(TokenKind.Colon);
+                    technology = ExpectStringContent();
+                    Expect(TokenKind.Semicolon);
+                }
+                else if (Check(TokenKind.At) && PeekAhead(1).Kind == TokenKind.KwTag)
+                {
+                    tags.AddRange(ParseTagAnnotation().Values);
+                }
+                else if (Check(TokenKind.KwRationale))
+                {
+                    rationales.Add(ParseRationaleDecl());
+                }
+                else
+                {
+                    ReportError($"Unexpected token in relationship body: {Peek().Kind}");
+                    Synchronize();
+                }
+            }
+
+            Expect(TokenKind.RBrace);
+        }
+        else
+        {
+            ReportError("Expected ':' or '{' after relationship target");
+            description = "";
+        }
+
+        return new RelationshipDecl(source, target, description, technology, tags, rationales, loc);
+    }
+
+    // ── Tag annotation ─────────────────────────────────────────────
+
+    private TagAnnotation ParseTagAnnotation()
+    {
+        var loc = CurrentLocation();
+        Expect(TokenKind.At);
+        Expect(TokenKind.KwTag);
+        Expect(TokenKind.LParen);
+
+        var values = new List<string>();
+        values.Add(ExpectStringContent());
+        while (Match(TokenKind.Comma))
+        {
+            values.Add(ExpectStringContent());
+        }
+
+        Expect(TokenKind.RParen);
+        Expect(TokenKind.Semicolon);
+        return new TagAnnotation(values, loc);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  DEPLOYMENT SPECIFICATION PRODUCTIONS
+    // ═══════════════════════════════════════════════════════════════
+
+    // ── Deployment ─────────────────────────────────────────────────
+
+    private DeploymentDecl ParseDeploymentDecl()
+    {
+        var loc = CurrentLocation();
+        Expect(TokenKind.KwDeployment);
+        string name = ExpectName();
+        Expect(TokenKind.LBrace);
+
+        var nodes = new List<DeploymentNodeDecl>();
+        var rationales = new List<RationaleDecl>();
+
+        while (!Check(TokenKind.RBrace) && !IsAtEnd)
+        {
+            if (Check(TokenKind.KwNode))
+            {
+                nodes.Add(ParseDeploymentNodeDecl());
+            }
+            else if (Check(TokenKind.KwRationale))
+            {
+                rationales.Add(ParseRationaleDecl());
+            }
+            else
+            {
+                ReportError($"Unexpected token in deployment body: {Peek().Kind}");
+                Synchronize();
+            }
+        }
+
+        Expect(TokenKind.RBrace);
+        return new DeploymentDecl(name, nodes, rationales, loc);
+    }
+
+    private DeploymentNodeDecl ParseDeploymentNodeDecl()
+    {
+        var loc = CurrentLocation();
+        Expect(TokenKind.KwNode);
+        string name = ExpectStringContent();
+        Expect(TokenKind.LBrace);
+
+        string? technology = null;
+        string? instance = null;
+        var childNodes = new List<DeploymentNodeDecl>();
+        var tags = new List<string>();
+        var rationales = new List<RationaleDecl>();
+
+        while (!Check(TokenKind.RBrace) && !IsAtEnd)
+        {
+            if (Check(TokenKind.KwTechnology))
+            {
+                Advance();
+                Expect(TokenKind.Colon);
+                technology = ExpectStringContent();
+                Expect(TokenKind.Semicolon);
+            }
+            else if (Check(TokenKind.KwInstance))
+            {
+                Advance();
+                Expect(TokenKind.Colon);
+                instance = ExpectName();
+                Expect(TokenKind.Semicolon);
+            }
+            else if (Check(TokenKind.KwNode))
+            {
+                childNodes.Add(ParseDeploymentNodeDecl());
+            }
+            else if (Check(TokenKind.At) && PeekAhead(1).Kind == TokenKind.KwTag)
+            {
+                tags.AddRange(ParseTagAnnotation().Values);
+            }
+            else if (Check(TokenKind.KwRationale))
+            {
+                rationales.Add(ParseRationaleDecl());
+            }
+            else
+            {
+                ReportError($"Unexpected token in deployment node body: {Peek().Kind}");
+                Synchronize();
+            }
+        }
+
+        Expect(TokenKind.RBrace);
+        return new DeploymentNodeDecl(name, technology, instance, childNodes, tags, rationales, loc);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  VIEW AND DYNAMIC SPECIFICATION PRODUCTIONS
+    // ═══════════════════════════════════════════════════════════════
+
+    // ── View ───────────────────────────────────────────────────────
+
+    private ViewDecl ParseViewDecl()
+    {
+        var loc = CurrentLocation();
+        Expect(TokenKind.KwView);
+
+        // Parse ViewKind (an identifier like "systemContext", "container", etc.)
+        string kindText = ExpectName();
+        ViewKind kind = kindText switch
+        {
+            "systemLandscape" => ViewKind.SystemLandscape,
+            "systemContext" => ViewKind.SystemContext,
+            "container" => ViewKind.Container,
+            "component" => ViewKind.Component,
+            "deployment" => ViewKind.Deployment,
+            _ => ViewKind.SystemContext, // default with diagnostic
+        };
+        if (kindText is not ("systemLandscape" or "systemContext" or "container" or "component" or "deployment"))
+        {
+            ReportError($"Unknown view kind '{kindText}'. Expected systemLandscape, systemContext, container, component, or deployment.");
+        }
+
+        // Optional "of" scope clause
+        string? scope = null;
+        if (Check(TokenKind.Ident) && Peek().Text == "of"
+            || Check(TokenKind.DottedIdent) && Peek().Text == "of")
+        {
+            Advance(); // consume "of"
+            scope = ExpectName();
+        }
+
+        string name = ExpectName();
+        Expect(TokenKind.LBrace);
+
+        ViewFilter? include = null;
+        ViewFilter? exclude = null;
+        LayoutDirection? autoLayout = null;
+        string? description = null;
+        var tags = new List<string>();
+        var rationales = new List<RationaleDecl>();
+
+        while (!Check(TokenKind.RBrace) && !IsAtEnd)
+        {
+            if (Check(TokenKind.KwInclude))
+            {
+                Advance();
+                Expect(TokenKind.Colon);
+                include = ParseViewFilter();
+                Expect(TokenKind.Semicolon);
+            }
+            else if (Check(TokenKind.KwExclude))
+            {
+                Advance();
+                Expect(TokenKind.Colon);
+                exclude = ParseViewFilter();
+                Expect(TokenKind.Semicolon);
+            }
+            else if (Check(TokenKind.KwAutoLayout))
+            {
+                Advance();
+                Expect(TokenKind.Colon);
+                // Layout direction values are hyphenated (top-down), so they
+                // must be parsed as identifiers. The lexer sees "top" as an
+                // IDENT, then "->" would fail. Accept both IDENT and STRING.
+                string dirText;
+                if (Check(TokenKind.String))
+                    dirText = StripQuotes(Advance().Text);
+                else if (Check(TokenKind.Ident) || Check(TokenKind.DottedIdent))
+                    dirText = Advance().Text;
+                else
+                {
+                    ReportError("Expected layout direction (top-down, left-right, bottom-up, right-left)");
+                    dirText = "top-down";
+                }
+                autoLayout = dirText switch
+                {
+                    "top-down" => LayoutDirection.TopDown,
+                    "left-right" => LayoutDirection.LeftRight,
+                    "bottom-up" => LayoutDirection.BottomUp,
+                    "right-left" => LayoutDirection.RightLeft,
+                    _ => LayoutDirection.TopDown,
+                };
+                Expect(TokenKind.Semicolon);
+            }
+            else if (Check(TokenKind.KwDescription))
+            {
+                Advance();
+                Expect(TokenKind.Colon);
+                description = ExpectStringContent();
+                Expect(TokenKind.Semicolon);
+            }
+            else if (Check(TokenKind.At) && PeekAhead(1).Kind == TokenKind.KwTag)
+            {
+                tags.AddRange(ParseTagAnnotation().Values);
+            }
+            else if (Check(TokenKind.KwRationale))
+            {
+                rationales.Add(ParseRationaleDecl());
+            }
+            else
+            {
+                ReportError($"Unexpected token in view body: {Peek().Kind}");
+                Synchronize();
+            }
+        }
+
+        Expect(TokenKind.RBrace);
+        return new ViewDecl(kind, scope, name, include, exclude, autoLayout, description, tags, rationales, loc);
+    }
+
+    private ViewFilter ParseViewFilter()
+    {
+        var loc = CurrentLocation();
+
+        // "all"
+        if (Check(TokenKind.KwAll))
+        {
+            Advance();
+            return ViewFilter.AllFilter(loc);
+        }
+
+        // "tagged" STRING
+        if (Check(TokenKind.Ident) && Peek().Text == "tagged")
+        {
+            Advance();
+            string tag = ExpectStringContent();
+            return ViewFilter.TaggedFilter(tag, loc);
+        }
+
+        // "[" IdentList "]"
+        if (Check(TokenKind.LBracket))
+        {
+            Advance();
+            var elements = new List<string>();
+            elements.Add(ExpectName());
+            while (Match(TokenKind.Comma))
+            {
+                elements.Add(ExpectName());
+            }
+            Expect(TokenKind.RBracket);
+            return ViewFilter.ExplicitFilter(elements, loc);
+        }
+
+        ReportError("Expected 'all', 'tagged \"...\"', or '[...]' in view filter");
+        return ViewFilter.AllFilter(loc);
+    }
+
+    // ── Dynamic ────────────────────────────────────────────────────
+
+    private DynamicDecl ParseDynamicDecl()
+    {
+        var loc = CurrentLocation();
+        Expect(TokenKind.KwDynamic);
+        string name = ExpectName();
+        Expect(TokenKind.LBrace);
+
+        var steps = new List<DynamicStep>();
+
+        while (!Check(TokenKind.RBrace) && !IsAtEnd)
+        {
+            if (Check(TokenKind.Integer))
+            {
+                steps.Add(ParseDynamicStep());
+            }
+            else
+            {
+                ReportError($"Expected step number in dynamic body, got {Peek().Kind}");
+                Synchronize();
+            }
+        }
+
+        Expect(TokenKind.RBrace);
+        return new DynamicDecl(name, steps, loc);
+    }
+
+    private DynamicStep ParseDynamicStep()
+    {
+        var loc = CurrentLocation();
+        int seq = int.Parse(Advance().Text); // INTEGER
+        Expect(TokenKind.Colon);
+        string source = ExpectName();
+        Expect(TokenKind.Arrow);
+        string target = ExpectName();
+
+        string description;
+        string? technology = null;
+
+        if (Check(TokenKind.Colon))
+        {
+            // Simple form: N: Source -> Target : "description";
+            Advance();
+            description = ExpectStringContent();
+            Match(TokenKind.Semicolon); // optional trailing semicolon
+        }
+        else if (Check(TokenKind.LBrace))
+        {
+            // Block form: N: Source -> Target { description: "..."; technology: "..."; }
+            Advance();
+            description = "";
+
+            while (!Check(TokenKind.RBrace) && !IsAtEnd)
+            {
+                if (Check(TokenKind.KwDescription))
+                {
+                    Advance();
+                    Expect(TokenKind.Colon);
+                    description = ExpectStringContent();
+                    Expect(TokenKind.Semicolon);
+                }
+                else if (Check(TokenKind.KwTechnology))
+                {
+                    Advance();
+                    Expect(TokenKind.Colon);
+                    technology = ExpectStringContent();
+                    Expect(TokenKind.Semicolon);
+                }
+                else
+                {
+                    ReportError($"Unexpected token in dynamic step body: {Peek().Kind}");
+                    Synchronize();
+                }
+            }
+
+            Expect(TokenKind.RBrace);
+            Match(TokenKind.Semicolon); // optional trailing semicolon
+        }
+        else
+        {
+            ReportError("Expected ':' or '{' after dynamic step target");
+            description = "";
+        }
+
+        return new DynamicStep(seq, source, target, description, technology, loc);
     }
 
     // ═══════════════════════════════════════════════════════════════

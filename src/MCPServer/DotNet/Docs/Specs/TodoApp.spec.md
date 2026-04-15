@@ -18,6 +18,30 @@ list items. Items persist to a local JSON file so they survive between sessions.
 
 The domain logic is separated from console IO so it can be reused in a different host.
 
+## Context
+
+```spec
+person User {
+    description: "Individual managing their personal todo list
+                  through the console interface.";
+}
+
+User -> TodoApp : "Adds, completes, deletes, and lists todo items.";
+```
+
+Rendered system context:
+
+```mermaid
+C4Context
+    title System Context: TodoApp
+
+    Person(user, "User", "Manages personal todo list through console interface")
+
+    System(todoapp, "TodoApp", "Console app for managing a personal todo list with JSON file persistence")
+
+    Rel(user, todoapp, "Adds, completes, deletes, and lists todo items")
+```
+
 ## System Declaration
 
 ```spec
@@ -97,6 +121,17 @@ entity TodoItem {
 }
 ```
 
+Rendered domain model:
+
+```mermaid
+classDiagram
+    class TodoItem {
+        +int id
+        +string title
+        +bool isCompleted
+    }
+```
+
 ## Contracts
 
 ### Domain Operations
@@ -163,6 +198,31 @@ topology Dependencies {
 }
 ```
 
+Rendered topology:
+
+```mermaid
+flowchart LR
+    classDef authored fill:#438DD5,stroke:#2E6295,color:#fff
+    classDef tests fill:#85BBF0,stroke:#5D99CF,color:#000
+
+    Console["TodoApp.Console<br/><i>application</i>"]:::authored
+    Domain["TodoApp.Domain<br/><i>library</i>"]:::authored
+    Persist["TodoApp.Persistence<br/><i>library</i>"]:::authored
+    Tests["TodoApp.Domain.Tests<br/><i>tests</i>"]:::tests
+
+    Console --> Domain
+    Console --> Persist
+    Persist --> Domain
+    Tests --> Domain
+    Domain -..-> |"DENIED"| Console
+    Domain -..-> |"DENIED"| Persist
+    Persist -..-> |"DENIED"| Console
+
+    linkStyle 4 stroke:#FF0000,stroke-dasharray:5
+    linkStyle 5 stroke:#FF0000,stroke-dasharray:5
+    linkStyle 6 stroke:#FF0000,stroke-dasharray:5
+```
+
 ## Phases
 
 ```spec
@@ -211,6 +271,23 @@ phase Host {
 }
 ```
 
+Rendered phase ordering:
+
+```mermaid
+flowchart TB
+    classDef phase fill:#438DD5,stroke:#2E6295,color:#fff
+
+    F["Foundation<br/><i>Domain compiles</i>"]:::phase
+    I["Infrastructure<br/><i>Persistence compiles</i>"]:::phase
+    T["Testing<br/><i>all tests pass</i>"]:::phase
+    H["Host<br/><i>Console compiles</i>"]:::phase
+
+    F --> I
+    F --> T
+    I --> H
+    T --> H
+```
+
 ## Traces
 
 ```spec
@@ -224,6 +301,32 @@ trace RequirementMap {
 
     invariant "full coverage": all sources have count(targets) >= 1;
 }
+```
+
+Rendered requirement traceability:
+
+```mermaid
+flowchart LR
+    classDef req fill:#438DD5,stroke:#2E6295,color:#fff
+    classDef comp fill:#85BBF0,stroke:#5D99CF,color:#000
+
+    Add["AddItem"]:::req
+    Complete["CompleteItem"]:::req
+    Delete["DeleteItem"]:::req
+    List["ListItems"]:::req
+    Persist["Persistence"]:::req
+    IdRule["IdNeverReused"]:::req
+
+    Domain["TodoApp.Domain"]:::comp
+    Console["TodoApp.Console"]:::comp
+    PersistComp["TodoApp.Persistence"]:::comp
+
+    Add --> Domain & Console
+    Complete --> Domain & Console
+    Delete --> Domain & Console
+    List --> Domain & Console
+    Persist --> PersistComp & Domain
+    IdRule --> Domain
 ```
 
 ## System-Level Constraints
@@ -316,6 +419,134 @@ dotnet solution TodoApp {
                      dotnet test TodoApp.slnx";
     }
 }
+```
+
+Rendered solution structure:
+
+```mermaid
+flowchart TB
+    classDef sln fill:#2E6295,stroke:#1A3D5C,color:#fff
+    classDef folder fill:#438DD5,stroke:#2E6295,color:#fff
+    classDef proj fill:#85BBF0,stroke:#5D99CF,color:#000
+
+    SLN["TodoApp.slnx"]:::sln
+
+    SRC["src/"]:::folder
+    TESTS["tests/"]:::folder
+
+    CON["TodoApp.Console<br/><i>startup</i>"]:::proj
+    DOM["TodoApp.Domain"]:::proj
+    PER["TodoApp.Persistence"]:::proj
+    DT["TodoApp.Domain.Tests"]:::proj
+
+    SLN --> SRC
+    SLN --> TESTS
+    SRC --> CON & DOM & PER
+    TESTS --> DT
+```
+
+## Deployment
+
+```spec
+deployment Local {
+    node "User workstation" {
+        technology: ".NET 10 runtime";
+        instance: TodoApp.Console;
+    }
+
+    rationale "Console app runs locally on the user's machine.
+               No server infrastructure needed.";
+}
+```
+
+Rendered deployment:
+
+```mermaid
+C4Deployment
+    title Deployment: TodoApp (Local)
+
+    Deployment_Node(ws, "User workstation", ".NET 10 runtime") {
+        Container(console, "TodoApp.Console", ".NET 10", "Console host for todo list management")
+    }
+```
+
+## Views
+
+```spec
+view systemContext of TodoApp SystemContextView {
+    include: all;
+    autoLayout: top-down;
+    description: "The TodoApp and its single user. No external
+                  system dependencies.";
+}
+
+view container of TodoApp ContainerView {
+    include: all;
+    autoLayout: left-right;
+    description: "Internal structure: domain library, persistence
+                  library, console host, and tests.";
+}
+```
+
+Rendered container view:
+
+```mermaid
+flowchart LR
+    classDef authored fill:#438DD5,stroke:#2E6295,color:#fff
+    classDef consumed fill:#999999,stroke:#6B6B6B,color:#fff
+    classDef tests fill:#85BBF0,stroke:#5D99CF,color:#000
+
+    subgraph TodoApp["TodoApp"]
+        Console["TodoApp.Console<br/><i>application</i>"]:::authored
+        Domain["TodoApp.Domain<br/><i>library</i>"]:::authored
+        Persist["TodoApp.Persistence<br/><i>library</i>"]:::authored
+        Tests["TodoApp.Domain.Tests<br/><i>tests</i>"]:::tests
+    end
+
+    subgraph Consumed["External Dependencies"]
+        Json["System.Text.Json<br/><i>platform</i>"]:::consumed
+        XUnit["xunit<br/><i>nuget</i>"]:::consumed
+    end
+
+    Console --> Domain
+    Console --> Persist
+    Persist --> Domain
+    Persist --> Json
+    Tests --> Domain
+    Tests --> XUnit
+```
+
+## Dynamic Scenarios
+
+```spec
+dynamic AddTodoItem {
+    1: User -> TodoApp.Console : "Selects 'Add' from numbered menu.";
+    2: TodoApp.Console -> TodoApp.Domain
+        : "Calls service AddItem with user-provided title.";
+    3: TodoApp.Domain -> TodoApp.Persistence
+        : "Persists new item via repository interface.";
+    4: TodoApp.Persistence -> TodoApp.Domain
+        : "Confirms item saved to JSON file.";
+    5: TodoApp.Console -> User
+        : "Displays updated todo list.";
+}
+```
+
+Rendered interaction sequence:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor user as User
+    participant console as TodoApp.Console
+    participant domain as TodoApp.Domain
+    participant persist as TodoApp.Persistence
+
+    user->>console: Selects 'Add' from numbered menu
+    console->>domain: Calls service AddItem with user-provided title
+    domain->>persist: Persists new item via repository interface
+    persist-->>domain: Confirms item saved to JSON file
+    console-->>user: Displays updated todo list
 ```
 
 ## Open Items

@@ -159,4 +159,33 @@ public class LexerTests
             Assert.Equal(expected[i], tokens[i].Kind);
         }
     }
+
+    [Fact]
+    public void Tokenize_ContextKeywords()
+    {
+        string source = "person external description technology tag";
+        var lexer = new Lexer(source, "test.spec");
+        var tokens = lexer.Tokenize();
+        Assert.Equal(TokenKind.KwPerson, tokens[0].Kind);
+        Assert.Equal(TokenKind.KwExternal, tokens[1].Kind);
+        Assert.Equal(TokenKind.KwDescription, tokens[2].Kind);
+        Assert.Equal(TokenKind.KwTechnology, tokens[3].Kind);
+        Assert.Equal(TokenKind.KwTag, tokens[4].Kind);
+    }
+
+    [Fact]
+    public void Tokenize_DeploymentAndViewKeywords()
+    {
+        string source = "deployment node instance view include exclude autoLayout dynamic";
+        var lexer = new Lexer(source, "test.spec");
+        var tokens = lexer.Tokenize();
+        Assert.Equal(TokenKind.KwDeployment, tokens[0].Kind);
+        Assert.Equal(TokenKind.KwNode, tokens[1].Kind);
+        Assert.Equal(TokenKind.KwInstance, tokens[2].Kind);
+        Assert.Equal(TokenKind.KwView, tokens[3].Kind);
+        Assert.Equal(TokenKind.KwInclude, tokens[4].Kind);
+        Assert.Equal(TokenKind.KwExclude, tokens[5].Kind);
+        Assert.Equal(TokenKind.KwAutoLayout, tokens[6].Kind);
+        Assert.Equal(TokenKind.KwDynamic, tokens[7].Kind);
+    }
 }

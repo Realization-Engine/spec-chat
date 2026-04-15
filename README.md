@@ -16,7 +16,7 @@ The full argument for why specification is the site where durable human capabili
 
 ## What SpecChat Is
 
-SpecChat is a specification-driven system for authoring software through collaboration between humans and LLMs. Its formal language, SpecLang, is embedded in Markdown: spec blocks are typed engineering objects with formal semantics, covering entities, contracts, invariants, components with topology rules, build phases with gate conditions, traces, constraints, package policies, and verification obligations. The `.spec.md` document is the primary engineering artifact. Everything generated from it (code, tests, documentation, dependency graphs) is a projection of the specification model.
+SpecChat is a specification-driven system for authoring software through collaboration between humans and LLMs. Its formal language, SpecLang, is embedded in Markdown: spec blocks are typed engineering objects with formal semantics, covering entities, contracts, invariants, persons, external systems, components with topology rules, build phases with gate conditions, traces, constraints, package policies, deployment environments, architectural views, dynamic interaction sequences, and verification obligations. The `.spec.md` document is the primary engineering artifact. Everything generated from it (code, tests, documentation, dependency graphs, deployment diagrams) is a projection of the specification model.
 
 The division of labor is explicit. The human authors commitments: abstractions, boundaries, constraints, invariants, contracts, and judgments about what must be preserved. The LLM operates as the realization engine: it consumes the specification and produces systems that conform to it. The boundary between the two is the specification model.
 
@@ -34,7 +34,7 @@ SpecChat organizes around four layers:
 
 SpecLang is the formal language inside SpecChat. Specification blocks live in ` ```spec ` fenced code blocks within ordinary Markdown; the surrounding prose carries design rationale and discussion. A `.spec.md` file is simultaneously a readable document and a machine-checkable specification.
 
-The language covers three registers of specification:
+The language covers five registers of specification:
 
 **Data specification** defines the domain model: entities with typed fields, enums with semantic descriptions, cross-field invariants, contracts at request/response boundaries, confidence signals that declare expected extraction reliability, and rationale (inline or structured micro-ADRs) that records why each choice was made.
 
@@ -52,7 +52,27 @@ entity LineItem {
 }
 ```
 
-**Systems specification** defines architecture: a hierarchical decomposition rooted at a `system` node, where every child is either `authored` (we build it) or `consumed` (we depend on it). Authored components carry responsibilities, internal structure, build phases with gate conditions, and contracts. Consumed components carry version constraints and boundary expectations. Topology rules, traceability mappings, cross-cutting constraints, and package policies are all first-class constructs.
+**Context specification** identifies who uses the system and what external systems it interacts with, before any internal decomposition. Persons (human actors), external systems (runtime peers), and relationships (labeled directional edges with description and technology) establish the outermost scope. General-purpose `@tag` annotations enable view-based filtering across all registers.
+
+```spec
+person Analyst {
+    description: "Business analyst reviewing revenue metrics.";
+    @tag("stakeholder", "primary-user");
+}
+
+external system PaymentGateway {
+    description: "Stripe payment processing API.";
+    technology: "REST/HTTPS";
+}
+
+Analyst -> AnalyticsDashboard : "Reviews revenue dashboards.";
+```
+
+**Systems specification** defines architecture: a hierarchical decomposition rooted at a `system` node, where every child is either `authored` (we build it) or `consumed` (we depend on it). Authored components carry responsibilities, internal structure, build phases with gate conditions, and contracts. Consumed components carry version constraints and boundary expectations. Topology rules (with enriched edges carrying technology and description), traceability mappings, cross-cutting constraints, and package policies are all first-class constructs.
+
+**Deployment specification** maps logical components onto infrastructure: deployment environments (Production, Staging), infrastructure nodes (servers, cloud services, pods), and component instances that link the system tree to operational topology.
+
+**View and dynamic specification** defines architectural diagrams and runtime behavior. View declarations implement model-vs-views separation: the model is defined once, views select subsets at different zoom levels (system landscape, system context, container, component, deployment). Dynamic declarations capture numbered interaction sequences for specific scenarios.
 
 **Design specification** defines what users see and interact with: pages, visualizations, parameter bindings, layout intent, and behavioral commitments. Prose intent is architecturally associated with formal declarations, so the LLM receives both during realization.
 
@@ -72,7 +92,7 @@ See the [Extension Overview](Delivery/spec-chat/extensions/the-standard/TheStand
 |---|---|
 | `Docs/` | Whitepaper and citations |
 | `Delivery/spec-chat/SpecChat-Overview.md` | Motivation, design rationale, and overview of the SpecChat system |
-| `Delivery/spec-chat/SpecLang-Specification.md` | Language definition: constructs, semantics, three registers of specification |
+| `Delivery/spec-chat/SpecLang-Specification.md` | Language definition: constructs, semantics, five registers of specification |
 | `Delivery/spec-chat/SpecLang-Grammar.md` | Formal EBNF grammar: lexer tokens, productions, ambiguity resolution |
 | `Delivery/spec-chat/samples/` | Sample manifest and system spec (Blazor analytics harness) |
 | `Delivery/spec-chat/extensions/the-standard/` | The Standard extension: overview, specification, grammar |

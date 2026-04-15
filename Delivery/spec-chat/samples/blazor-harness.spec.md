@@ -21,6 +21,44 @@ This document is expressed in SpecChat syntax and serves as the Phase 2 validati
 artifact: if the grammar can parse this file end-to-end, the systems specification
 layer is proven against a real system.
 
+## Context
+
+```spec
+person Researcher {
+    description: "Academic or practitioner exploring the 45 equations
+                  from The Multiplier and the Mirror through interactive
+                  visualizations.";
+    @tag("stakeholder", "primary-user");
+}
+
+person Author {
+    description: "Paper author validating that visualizations accurately
+                  represent the equations as published.";
+    @tag("stakeholder", "verifier");
+}
+
+Researcher -> FStarVisualHarness
+    : "Adjusts parameters and explores equation behavior interactively.";
+
+Author -> FStarVisualHarness
+    : "Verifies equation visualizations against published formulations.";
+```
+
+Rendered system context:
+
+```mermaid
+C4Context
+    title System Context: F* Visual Test Harness
+
+    Person(researcher, "Researcher", "Explores equations through interactive visualizations")
+    Person(author, "Author", "Verifies visualizations against published formulations")
+
+    System(harness, "FStarVisualHarness", "Interactive visualizations for 45 equations. All computation client-side in browser.")
+
+    Rel(researcher, harness, "Adjusts parameters and explores equation behavior")
+    Rel(author, harness, "Verifies equation visualizations")
+```
+
 ## System Declaration
 
 ```spec
@@ -287,6 +325,28 @@ topology ProjectDependencies {
 }
 ```
 
+Rendered topology:
+
+```mermaid
+flowchart LR
+    classDef authored fill:#438DD5,stroke:#2E6295,color:#fff
+    classDef tests fill:#85BBF0,stroke:#5D99CF,color:#000
+
+    App["FStarEquations.App"]:::authored
+    UI["FStar.UI"]:::authored
+    Eq["FStarEquations"]:::authored
+    Tests["FStarEquations.App.Tests"]:::tests
+
+    App --> UI
+    App --> Eq
+    Tests --> UI
+    Tests --> Eq
+    Tests --> App
+    UI -..-> |"DENIED: UI must not know domain"| Eq
+
+    linkStyle 5 stroke:#FF0000,stroke-dasharray:5
+```
+
 ## Construction Phases
 
 ```spec
@@ -378,6 +438,22 @@ phase Polish {
 }
 ```
 
+Rendered phase ordering:
+
+```mermaid
+flowchart TB
+    classDef phase fill:#438DD5,stroke:#2E6295,color:#fff
+
+    S["Scaffolding<br/><i>build + 116 tests + app launches</i>"]:::phase
+    C["CoreComponents<br/><i>134 tests</i>"]:::phase
+    H["HubAndStandaloneCharts<br/><i>164 tests</i>"]:::phase
+    V["CompositeVisualizations<br/><i>225 tests</i>"]:::phase
+    D["Dashboards<br/><i>225 tests</i>"]:::phase
+    P["Polish<br/><i>clean build</i>"]:::phase
+
+    S --> C --> H --> V --> D --> P
+```
+
 ## Traceability
 
 ```spec
@@ -454,6 +530,49 @@ trace ChartComponentsToPages {
     PhasePortrait    -> [TippingPoint, TerminalDynamics];
     TimeSeriesAnimator -> [TimeSeriesPlayerPage];
 }
+```
+
+Rendered chart-to-page traceability:
+
+```mermaid
+flowchart LR
+    classDef chart fill:#438DD5,stroke:#2E6295,color:#fff
+    classDef page fill:#85BBF0,stroke:#5D99CF,color:#000
+
+    LC["LineChart"]:::chart
+    BC["BarChart"]:::chart
+    HM["HeatMap"]:::chart
+    WC["WaterfallChart"]:::chart
+    NL["NumberLine"]:::chart
+    TD["TornadoDiagram"]:::chart
+    PP["PhasePortrait"]:::chart
+    TSA["TimeSeriesAnimator"]:::chart
+
+    BM["BaseModel"]:::page
+    VP["Variance"]:::page
+    CE["Creation/Eval"]:::page
+    NF["NegativeForce"]:::page
+    FD["ForceDynamics"]:::page
+    TK["TacitKnowledge"]:::page
+    TP["TippingPoint"]:::page
+    MG["ModelGrowth"]:::page
+    DV["Divergence"]:::page
+    ORG["Organizational"]:::page
+    MOT["Motivation"]:::page
+    SOV["Sovereignty"]:::page
+    TF["Transfer"]:::page
+    TL["Timeline"]:::page
+    TD2["Terminal"]:::page
+    TSP["TimeSeries"]:::page
+
+    LC --> BM & VP & MOT & MG & DV & ORG & FD & TK & SOV & TL
+    BC --> BM & CE & ORG & SOV & TF
+    HM --> BM & NF
+    WC --> NF
+    NL --> TP & TF
+    TD --> TP
+    PP --> TP & TD2
+    TSA --> TSP
 ```
 
 ## System-Level Constraints
@@ -582,6 +701,55 @@ enum BarOrientation {
     vertical: "Bars extend upward from the X axis",
     horizontal: "Bars extend rightward from the Y axis"
 }
+```
+
+Rendered domain model:
+
+```mermaid
+classDiagram
+    class ChartSeries {
+        +string label
+        +DataPoint[] points
+        +string color
+        +double strokeWidth
+        +bool showDots
+    }
+
+    class DataPoint {
+        +double x
+        +double y
+    }
+
+    class BarItem {
+        +string label
+        +double value
+        +string color
+    }
+
+    class WaterfallItem {
+        +string label
+        +double value
+        +bool isTotal
+    }
+
+    class NumberLinePoint {
+        +double value
+        +string color
+    }
+
+    class TornadoFactor {
+        +string label
+        +double positiveContribution
+        +double negativeContribution
+    }
+
+    class BarOrientation {
+        <<enumeration>>
+        vertical
+        horizontal
+    }
+
+    ChartSeries *-- DataPoint : points
 ```
 
 ## Base Model
@@ -1638,6 +1806,40 @@ page HomePage {
 }
 ```
 
+Rendered page navigation:
+
+```mermaid
+flowchart TB
+    classDef home fill:#2E6295,stroke:#1A3D5C,color:#fff
+    classDef page fill:#438DD5,stroke:#2E6295,color:#fff
+    classDef dash fill:#85BBF0,stroke:#5D99CF,color:#000
+
+    H["/ HomePage"]:::home
+
+    BM["/base-model"]:::page
+    VP["/variance"]:::page
+    CE["/creation-evaluation"]:::page
+    NF["/negative-force"]:::page
+    FD["/force-dynamics"]:::page
+    TK["/tacit-knowledge"]:::page
+    TP["/tipping-point"]:::page
+    DV["/divergence"]:::page
+    ORG["/organizational"]:::page
+    MOT["/motivation"]:::page
+    SOV["/sovereignty"]:::page
+    MG["/model-growth"]:::page
+    TF["/transfer"]:::page
+
+    CD["/cascade"]:::dash
+    TD["/terminal"]:::dash
+    TL["/timeline"]:::dash
+
+    H --> BM & VP & CE & NF
+    H --> FD & TK & TP & DV
+    H --> ORG & MOT & SOV & MG
+    H --> TF & CD & TD & TL
+```
+
 ## The Cascade
 
 The cascade dashboard is an interactive flow diagram showing how equations feed into each other across the entire system. Each node represents a key quantity (M, F, F*, K_tacit, output variance, motivation, etc.) and is rendered as a live indicator showing its current value. Edges are labeled with equation numbers. Clicking any node navigates to the corresponding section page. The layout follows the causal flow of the paper: M(t) at the top, force dynamics and tacit knowledge in the middle, organizational consequences and divergence at the bottom.
@@ -1848,4 +2050,131 @@ visualization SynchronizedTimeline {
               gamma_m, S, E, R, sigma, delta, phi, W0, psi,
               varianceF, noiseMeasurement, dt];
 }
+```
+
+## Deployment
+
+```spec
+deployment Production {
+    node "GitHub Pages" {
+        technology: "Static CDN";
+
+        node "Blazor WASM Runtime" {
+            technology: "WebAssembly/.NET 10";
+            instance: FStarEquations.App;
+        }
+    }
+
+    rationale {
+        context "The app is a client-side Blazor WASM standalone.
+                 All computation runs in the browser. No server-side
+                 processing is needed.";
+        decision "GitHub Pages for static hosting. Zero server cost.
+                  CDN-backed delivery.";
+        consequence "No server infrastructure to maintain. Deployment
+                     is a static file push. The WASM bundle contains
+                     the full .NET runtime and the equation library.";
+    }
+}
+```
+
+Rendered deployment:
+
+```mermaid
+C4Deployment
+    title Deployment: F* Visual Test Harness (Production)
+
+    Deployment_Node(gh, "GitHub Pages", "Static CDN") {
+        Deployment_Node(wasm, "Blazor WASM Runtime", "WebAssembly/.NET 10") {
+            Container(app, "FStarEquations.App", "Blazor WASM", "Host app bridging equations to visualizations")
+        }
+    }
+```
+
+## Architectural Views
+
+```spec
+view systemContext of FStarVisualHarness SystemContextView {
+    include: all;
+    autoLayout: top-down;
+    description: "The F* Visual Test Harness and its users.
+                  No external system dependencies; all computation
+                  is client-side.";
+}
+
+view container of FStarVisualHarness ContainerView {
+    include: all;
+    autoLayout: left-right;
+    description: "Internal structure: the equation library, the
+                  UI component library, the host app, and tests.";
+}
+
+view deployment of Production DeploymentView {
+    include: all;
+    autoLayout: top-down;
+    description: "Production deployment: static hosting with
+                  client-side WASM execution.";
+}
+```
+
+Rendered container view:
+
+```mermaid
+flowchart LR
+    classDef authored fill:#438DD5,stroke:#2E6295,color:#fff
+    classDef consumed fill:#999999,stroke:#6B6B6B,color:#fff
+    classDef tests fill:#85BBF0,stroke:#5D99CF,color:#000
+
+    subgraph FStarVisualHarness["F* Visual Test Harness"]
+        Eq["FStarEquations<br/><i>library</i>"]:::authored
+        UI["FStar.UI<br/><i>library</i>"]:::authored
+        App["FStarEquations.App<br/><i>application</i>"]:::authored
+        Tests["FStarEquations.App.Tests<br/><i>tests</i>"]:::tests
+    end
+
+    subgraph Consumed["External Dependencies"]
+        Blazor["BlazorWasm<br/><i>nuget</i>"]:::consumed
+        AspNet["AspNetComponents<br/><i>nuget</i>"]:::consumed
+        JSI["JSInterop<br/><i>nuget</i>"]:::consumed
+        BUnit["BUnit<br/><i>nuget</i>"]:::consumed
+        XUnit["XUnit<br/><i>nuget</i>"]:::consumed
+    end
+
+    App --> Eq
+    App --> UI
+    App --> Blazor
+    UI --> AspNet
+    UI --> JSI
+    Tests --> BUnit
+    Tests --> XUnit
+```
+
+## Dynamic Scenarios
+
+```spec
+dynamic ExploreEquation {
+    1: Researcher -> FStarEquations.App
+        : "Opens a page and adjusts parameter sliders.";
+    2: FStarEquations.App -> FStarEquations
+        : "Calls equation methods with updated parameters.";
+    3: FStarEquations -> FStarEquations.App
+        : "Returns computed results.";
+    4: FStarEquations.App -> Researcher
+        : "Renders updated visualization with new parameter values.";
+}
+```
+
+Rendered interaction sequence:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor researcher as Researcher
+    participant app as FStarEquations.App
+    participant engine as FStarEquations
+
+    researcher->>app: Opens a page and adjusts parameter sliders
+    app->>engine: Calls equation methods with updated parameters
+    engine-->>app: Returns computed results
+    app-->>researcher: Renders updated visualization with new parameter values
 ```

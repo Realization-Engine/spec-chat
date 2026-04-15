@@ -1,4 +1,4 @@
-# SpecChat: A Specification Language for Human-to-LLM Communication
+# SpecLang: A Specification Language for Human-to-LLM Communication
 
 ## Context
 
@@ -88,13 +88,19 @@ Confidence signals address this by attaching an expected reliability level to ea
 
 This maps directly to the epistemic gap (Eq. 10: Delta = Mp / (Ms * Fi)). The gap between how correct the output *looks* (presentation fidelity, Mp) and how correct it *is* (substance fidelity, Ms * Fi) is the central risk of LLM-mediated systems. Confidence signals make that gap visible rather than hiding it behind a boolean validation gate. The consuming application can then decide: accept high-confidence fields, prompt the user to confirm low-confidence ones, reject the extraction entirely if aggregate confidence is too low.
 
-## Three Registers of Specification
+## Five Registers of Specification
 
-SpecChat operates in three registers that are all necessary and none is sufficient alone.
+SpecChat operates in five registers that cover the full architectural scope from stakeholder to server.
 
 **Data specification** answers: "What does this data look like and what constraints hold on its fields?" Entities, enums, field-level invariants, confidence signals, and contracts at request/response boundaries. This is what type systems and schema languages approximate, extended with the semantic commitments that structure alone cannot carry.
 
-**Systems specification** answers: "What are the parts of this system, how do they relate, in what order are they built, and what architectural rules hold across the whole?" Components, dependency topology, phased construction with validation gates, cross-cutting traceability, system-level constraints, and package policies. This is what architecture documents carry in prose, made explicit and machine-checkable.
+**Context specification** answers: "Who uses this system, and what external systems does it interact with?" Persons (human actors), external systems (services outside our boundary), and relationships (labeled, directional edges with description and technology). This is C4 Level 1: the outermost zoom level that establishes what is being built, for whom, and what it depends on before decomposing internals. Context specification also introduces general-purpose tagging (`@tag`) that works across all registers, enabling view-based filtering of any element by classification.
+
+**Systems specification** answers: "What are the parts of this system, how do they relate, in what order are they built, and what architectural rules hold across the whole?" Components, dependency topology (with enriched edges carrying technology and description), phased construction with validation gates, cross-cutting traceability, system-level constraints, and package policies. This is what architecture documents carry in prose, made explicit and machine-checkable.
+
+**Deployment specification** answers: "Where does each part of the system run?" Deployment environments (Production, Staging, Development), infrastructure nodes (servers, cloud services, container orchestrators, Kubernetes pods), and component instances that link logical architecture to operational topology. This is C4's deployment view: the bridge between what you build and where it runs. Deployment nodes nest to model infrastructure hierarchy, and instance declarations reference authored components from the system tree, creating a traceable chain from specification to server.
+
+**View and dynamic specification** answers: "What subset of the model should be visible in a given diagram, and how do elements collaborate at runtime?" View declarations implement the Structurizr principle of model-vs-views separation: the model is defined once; views select subsets for visualization at different zoom levels (system landscape, system context, container, component, deployment). Dynamic declarations capture runtime interaction sequences for specific use cases, filling the gap between static topology (who may depend on whom) and runtime flow (how a request moves through the system for a specific scenario).
 
 **Design specification** answers: "What does each part of the system look like, behave like, and communicate to its users?" Pages, visualizations, parameter bindings, slider declarations, layout intent, and behavioral commitments. This is what design documents carry through interleaved prose and structured content: the specification of what a page shows, how a visualization maps computation outputs to chart parameters, what interaction patterns the user experiences, and why each design choice was made.
 
@@ -172,6 +178,72 @@ contract IngressBoundary {
 refines CoffeeOrder as DetailedCoffeeOrder {
     loyaltyId: string?;
     invariant "loyalty orders have at most 10 items": count(items) <= 10;
+}
+```
+
+### Context specification constructs
+
+Context specification establishes the outermost boundary: who uses the system, what external systems it interacts with, and how elements relate to each other. These constructs answer C4 Level 1 questions before any internal decomposition begins.
+
+```spec
+// --- Persons: human users and actors ---
+
+person Analyst {
+    description: "Business analyst reviewing revenue and
+                  retention metrics across segments.";
+    @tag("stakeholder", "primary-user");
+}
+
+person Executive {
+    description: "C-suite executive using the Monday
+                  morning dashboard for high-level metrics.";
+    @tag("stakeholder", "read-only");
+}
+
+// --- External systems: services outside our boundary ---
+//
+// External systems are not consumed packages (those are
+// build-time dependencies declared with `consumed component`).
+// External systems are runtime peers: services the system
+// calls, receives data from, or integrates with at runtime.
+
+external system PaymentGateway {
+    description: "Stripe payment processing API. Source of
+                  transaction data for revenue calculations.";
+    technology: "REST/HTTPS";
+    @tag("external", "financial");
+
+    rationale "Revenue calculations require granular transaction
+               data. Stripe's reporting API provides segment-level
+               detail that our internal systems do not store.";
+}
+
+external system DataWarehouse {
+    description: "Snowflake data warehouse. Source of historical
+                  retention and churn metrics.";
+    technology: "Snowflake SQL/HTTPS";
+    @tag("external", "data-source");
+}
+
+// --- Relationships: labeled edges between elements ---
+//
+// Relationships connect persons, external systems, and
+// internal systems. Each carries a description (what is
+// communicated) and optionally a technology (how it is
+// communicated). Relationships are directional.
+
+Analyst -> AnalyticsDashboard : "Reviews revenue and retention dashboards.";
+
+Executive -> AnalyticsDashboard : "Views Monday morning executive summary.";
+
+AnalyticsDashboard -> PaymentGateway {
+    description: "Fetches transaction history for revenue calculations.";
+    technology: "REST/HTTPS";
+}
+
+AnalyticsDashboard -> DataWarehouse {
+    description: "Queries historical retention and churn data.";
+    technology: "Snowflake SQL/HTTPS";
 }
 ```
 
@@ -422,6 +494,14 @@ package_policy DashboardPolicy {
 topology ProjectDependencies {
     allow Analytics.App -> Dashboard.UI;
     allow Analytics.App -> Analytics.Engine;
+    allow Analytics.App -> PaymentGateway {
+        technology: "REST/HTTPS";
+        description: "Fetches transaction history for revenue calculations.";
+    };
+    allow Analytics.App -> DataWarehouse {
+        technology: "Snowflake SQL/HTTPS";
+        description: "Queries historical retention and churn data.";
+    };
     allow Analytics.App.Tests -> Dashboard.UI;
     allow Analytics.App.Tests -> Analytics.Engine;
     allow Analytics.App.Tests -> Analytics.App;
@@ -565,6 +645,113 @@ constraint TestNaming {
 }
 ```
 
+### Deployment specification constructs
+
+Deployment declarations map logical components onto infrastructure. Each deployment block represents a named environment. Nodes nest to model infrastructure hierarchy: a cloud region contains a cluster, a cluster contains nodes, nodes contain component instances. Instance declarations reference authored components from the system tree, creating a traceable link from logical architecture to operational topology.
+
+```spec
+// --- Deployment: where each part of the system runs ---
+
+deployment Production {
+    node "Azure Static Web Apps" {
+        technology: "Azure SWA/West US 2";
+
+        node "Blazor WASM Host" {
+            technology: "WebAssembly";
+            instance: Analytics.App;
+        }
+    }
+
+    node "Azure Functions" {
+        technology: "Consumption Plan/West US 2";
+        instance: Analytics.Engine;
+        @tag("serverless");
+    }
+
+    rationale {
+        context "The dashboard is a client-side Blazor WASM app.
+                 All computation runs in the browser. The static
+                 host serves the compiled WASM bundle.";
+        decision "Azure Static Web Apps for the WASM host.
+                  Azure Functions for any server-side
+                  pre-computation if needed.";
+        consequence "No always-on server cost for the dashboard.
+                     Scaling is handled by the CDN and the
+                     Functions consumption plan.";
+    }
+}
+
+deployment Staging {
+    node "Azure Static Web Apps" {
+        technology: "Azure SWA/West US 2 (staging slot)";
+
+        node "Blazor WASM Host" {
+            technology: "WebAssembly";
+            instance: Analytics.App;
+        }
+    }
+}
+```
+
+### View specification constructs
+
+View declarations define which subset of the model to render as a diagram. This implements the model-vs-views separation principle: the model (persons, systems, components, external systems, deployment nodes) is defined once; views select subsets for visualization at different zoom levels.
+
+Views are specification-level declarations, not rendering instructions. The projection layer decides how to render them (Mermaid, DOT, Structurizr DSL, PlantUML, etc.).
+
+```spec
+// --- Views: what to show at each zoom level ---
+
+view systemContext of AnalyticsDashboard SystemContextView {
+    include: all;
+    autoLayout: top-down;
+    description: "The Analytics Dashboard and its external
+                  dependencies, as seen by its users.";
+}
+
+view container of AnalyticsDashboard ContainerView {
+    include: all;
+    exclude: tagged "internal-only";
+    autoLayout: left-right;
+    description: "Internal structure of the Analytics Dashboard
+                  showing authored and consumed components.";
+}
+
+view deployment of Production ProductionDeploymentView {
+    include: all;
+    autoLayout: top-down;
+    description: "Production infrastructure showing where
+                  each component runs.";
+}
+```
+
+### Dynamic specification constructs
+
+Dynamic declarations capture runtime behavior by showing how elements collaborate for a specific use case or scenario. Each step is a numbered interaction. Dynamic declarations fill the gap between static topology (who may depend on whom) and runtime flow (how a specific request moves through the system).
+
+```spec
+// --- Dynamic: behavioral interaction sequences ---
+
+dynamic ExecutiveDashboardLoad {
+    1: Executive -> Analytics.App
+        : "Opens /executive route in browser.";
+    2: Analytics.App -> PaymentGateway {
+        description: "Fetches revenue transactions for default period.";
+        technology: "REST/HTTPS";
+    };
+    3: Analytics.App -> DataWarehouse {
+        description: "Queries retention and churn metrics.";
+        technology: "Snowflake SQL/HTTPS";
+    };
+    4: Analytics.App -> Analytics.Engine
+        : "Computes revenue waterfall, cohort retention, churn rate.";
+    5: Analytics.Engine -> Analytics.App
+        : "Returns computed metric results.";
+    6: Analytics.App -> Executive
+        : "Renders executive dashboard with all visualizations.";
+}
+```
+
 ### Design specification constructs
 
 Page and visualization declarations are semantically children of authored components (they belong to the host application). Syntactically, they appear in their own spec blocks in the `.spec.md` file, referencing their parent via `host:` (pages) or `page:` (visualizations). This preserves the natural interleaving of formal structure and prose intent.
@@ -647,6 +834,17 @@ visualization CohortRetentionCurves {
 | `@default` | Fallback when extraction fails | Explicit unknown handling |
 | `unknown` | Type for unresolvable fields | Escape hatch |
 
+#### Context specification keywords
+
+| Keyword | Purpose | Theoretical Connection |
+|---------|---------|-----------------|
+| `person` | Human user or actor who interacts with the system | Typed identity for actors (C4 Level 1; Enquiry sec. 5 "actor") |
+| `external system` | Software system outside our boundary that we interact with at runtime | Typed identity for external peers; distinguishes runtime dependencies from build-time consumed packages |
+| `description` | Prose description of a person, external system, or relationship | Forces articulation of purpose at the context level |
+| `technology` | Communication protocol or technology stack | Makes communication mechanisms explicit and auditable |
+| `->` (relationship) | Labeled directional edge between persons, systems, and external systems | Meaningful relations at the outermost scope (Enquiry sec. 5 "depends on, constrains") |
+| `@tag` | General-purpose classification for any element across all registers | Enables view-based filtering; tag-driven include/exclude for diagram projections |
+
 #### Systems specification keywords
 
 | Keyword | Purpose | Theoretical Connection |
@@ -694,6 +892,28 @@ visualization CohortRetentionCurves {
 | `parameters` | Bindings from computation methods to chart inputs | The bridge between computation and rendering |
 | `sliders` | Interactive controls exposed to the user | Specifies what the user can manipulate |
 | Prose intent (markdown) | Natural-language design rationale between spec blocks | The human voice in the specification; carried alongside formal structure |
+
+#### Deployment specification keywords
+
+| Keyword | Purpose | Theoretical Connection |
+|---------|---------|-----------------|
+| `deployment` | Named environment (Production, Staging, etc.) | Infrastructure as specification, not as an afterthought |
+| `node` | Infrastructure element (server, cloud service, pod, cluster) | Typed identity for infrastructure; nests to model hierarchy |
+| `instance` | Links a logical component to the infrastructure that hosts it | Traceability from specification to server; bridges logical and operational topology |
+
+#### View and dynamic specification keywords
+
+| Keyword | Purpose | Theoretical Connection |
+|---------|---------|-----------------|
+| `view` | Declares a diagram as a subset of the model at a specific zoom level | Model-vs-views separation; one model, many projections (Structurizr principle) |
+| `systemLandscape` | View kind: all persons and systems across the enterprise | C4 Level 0: the widest zoom |
+| `systemContext` | View kind: one system with its direct connections | C4 Level 1: who uses it, what does it talk to |
+| `container` | View kind: internal containers within a system | C4 Level 2: deployable units |
+| `component` | View kind: components within a container | C4 Level 3: logical building blocks |
+| `include` | Elements to show in a view (all, tagged, or explicit list) | View scoping: what is visible |
+| `exclude` | Elements to hide from a view (tagged or explicit list) | View scoping: what is filtered out |
+| `autoLayout` | Layout direction hint for rendering | Rendering guidance, not constraint |
+| `dynamic` | Named behavioral interaction sequence for a specific scenario | Runtime flow: how elements collaborate for a use case (C4 dynamic diagram) |
 
 ## How Theoretical Concepts Inform Each Feature
 
@@ -765,13 +985,20 @@ The semantic model is a hierarchy of C# record types. It must be rich enough to 
 - `Expr` -- BinaryExpr, UnaryExpr, MemberAccessExpr, LiteralExpr, IdentifierExpr, InExpr, CallExpr, QuantifierExpr, ListExpr
 - `TextSpan` -- source location for error reporting back to the original .spec.md
 
+#### Context specification nodes
+
+- `PersonDecl` -- named human user or actor with `Description` (string), optional `TagAnnotation[]`, optional `RationaleDecl`
+- `ExternalSystemDecl` -- named external system with `Description` (string), `Technology` (string), optional `TagAnnotation[]`, optional `RationaleDecl`
+- `RelationshipDecl` -- directional edge between two named elements with `Description` (string), optional `Technology` (string), optional `TagAnnotation[]`, optional `RationaleDecl`. Short form (description only) and block form (multiple properties) map to the same AST node.
+- `TagAnnotation` -- list of tag strings attached to a declaration. Not a standalone declaration; embedded within declarations that support tagging.
+
 #### Systems specification nodes
 
 - `SystemDecl` -- root of the decomposition tree with `Target`, `Responsibility`, child `ComponentDecl[]` (authored and consumed)
 - `AuthoredComponentDecl` -- named building block that we write, with `Kind` (library, application, tests), `Path` (relative directory), `Status` (existing or new; defaults to new), `Responsibility` (prose), optional `ContractDecl` (API surface), optional `RationaleDecl`
 - `ConsumedComponentDecl` -- named external dependency that we use, with `Source` (registry + package name), `Version` (constraint), `Responsibility` (prose), `UsedBy` (authored component references), optional `ContractDecl`, optional `RationaleDecl`
 - `TopologyDecl` -- named dependency/communication ruleset containing `DependencyRule[]` and optional `InvariantDecl[]`, `RationaleDecl[]`. Rules apply to authored-to-authored edges and authored-to-consumed edges.
-- `DependencyRule` -- `Allow` or `Deny` between two component references, with optional `RationaleDecl`
+- `DependencyRule` -- `Allow` or `Deny` between two component references, with optional `Description` (string), `Technology` (string), `RationaleDecl`. The block form enriches edges with communication protocol and intent.
 - `PhaseDecl` -- named construction stage with `Requires` (predecessor phase names), `Produces` (authored component/artifact references), `GateDecl[]`, optional `RationaleDecl`. Phases apply to authored components; consumed components are prerequisites that must be available.
 - `GateDecl` -- named validation criterion with `Command` (executable string), `Expects` (assertion expressions), optional prose description
 - `TraceDecl` -- named many-to-many mapping with `TraceLink[]` and optional `InvariantDecl[]`
@@ -782,6 +1009,21 @@ The semantic model is a hierarchy of C# record types. It must be rich enough to 
 - `PlatformRealizationDecl` -- abstract base for platform-specific workspace semantics
 - `DotNetSolutionDecl` -- .NET platform realization with `Format` (slnx or sln), `Startup` (project reference), `SolutionFolderDecl[]` (named folders with project membership), optional `RationaleDecl`
 - `SolutionFolderDecl` -- named folder within a solution containing `Projects` (component references)
+
+#### Deployment specification nodes
+
+- `DeploymentDecl` -- named deployment environment with child `DeploymentNodeDecl[]` and optional `RationaleDecl`
+- `DeploymentNodeDecl` -- named infrastructure element with `Technology` (string), optional `Instance` (authored component reference), child `DeploymentNodeDecl[]` (recursive nesting for infrastructure hierarchy), optional `TagAnnotation[]`, optional `RationaleDecl`
+
+#### View specification nodes
+
+- `ViewDecl` -- named view with `ViewKind` (systemLandscape, systemContext, container, component, deployment), optional `Scope` (DOTTED_IDENT reference to the scoped element), `Include` filter, `Exclude` filter, `AutoLayout` direction, `Description` (string), optional `TagAnnotation[]`, optional `RationaleDecl`
+- `ViewFilter` -- abstract base with three variants: `AllFilter`, `TaggedFilter` (single tag string), `ExplicitFilter` (ident list)
+
+#### Dynamic specification nodes
+
+- `DynamicDecl` -- named behavioral sequence with child `DynamicStep[]`
+- `DynamicStep` -- sequence number (integer), source reference, target reference, `Description` (string), optional `Technology` (string)
 
 #### Design specification nodes
 
@@ -799,7 +1041,7 @@ Parses `.spec.md` files into the specification model.
 3. **Parser** -- recursive descent, produces an AST (Abstract Syntax Tree: the structured, in-memory representation of the parsed specification that all downstream tools, protocol, quality analyzer, projections, operate on)
 4. **Semantic analyzer** -- resolves references, checks consistency
 
-Semantic analysis (26 checks):
+Semantic analysis (40 checks):
 
 Data specification checks (7):
 
@@ -811,30 +1053,52 @@ Data specification checks (7):
 6. Contract scope validation: requires/ensures reference existing fields
 7. Annotation consistency: @range only on numeric types, @pattern only on strings
 
+Context specification checks (4):
+
+8. Person resolution: every person name is unique across all person declarations
+9. External system resolution: every external system name is unique and does not collide with declared system names
+10. Relationship endpoint resolution: every source and target in a relationship declaration references a declared person, system, or external system
+11. Tag consistency: tag values are non-empty strings; tags referenced in view filters exist on at least one element
+
 Systems specification checks (14):
 
-8. System structure: exactly one `system` root; no duplicate component names across authored and consumed
-9. Topology reference resolution: every allow/deny references declared components (authored or consumed)
-10. Topology cycle detection: deny rules do not contradict allow rules; allow graph has no unintended cycles
-11. Phase ordering: requires references resolve to declared phases; no circular phase dependencies
-12. Phase coverage: every authored component with `status: new` (or no explicit status) appears in at least one phase's produces list. Components with `status: existing` and consumed components are excluded; they are prerequisites, not products.
-12a. Consumed component consistency: every consumed component's `used_by` references resolve to declared authored components; `used_by` edges are consistent with topology allow rules
-13. Trace endpoint resolution: every source and target in a trace references a declared entity, component, or named artifact
-14. Constraint scope resolution: scope references resolve to declared components
-15. Package policy consistency: no package appears in both an allow and deny category
-16. Consumed component compliance: every consumed component's `source` package satisfies the active `package_policy` (not in a denied category; if in no allowed category, the consumed component must have rationale)
-17. Package policy coverage: every system with consumed components is subject to at least one `package_policy`
-18. Platform realization consistency: every authored component appears in exactly one solution folder; no project listed in a solution folder is undeclared as a component
-19. Startup project resolution: the `startup` project references a declared authored component with an executable kind (application, host, etc.)
-20. Solution-system alignment: the `dotnet solution` name resolves to a declared `system`; format matches target (slnx for net10.0+)
+12. System structure: exactly one `system` root; no duplicate component names across authored and consumed
+13. Topology reference resolution: every allow/deny references declared components (authored, consumed, or external systems)
+14. Topology cycle detection: deny rules do not contradict allow rules; allow graph has no unintended cycles
+15. Phase ordering: requires references resolve to declared phases; no circular phase dependencies
+16. Phase coverage: every authored component with `status: new` (or no explicit status) appears in at least one phase's produces list. Components with `status: existing` and consumed components are excluded; they are prerequisites, not products.
+16a. Consumed component consistency: every consumed component's `used_by` references resolve to declared authored components; `used_by` edges are consistent with topology allow rules
+17. Trace endpoint resolution: every source and target in a trace references a declared entity, component, or named artifact
+18. Constraint scope resolution: scope references resolve to declared components
+19. Package policy consistency: no package appears in both an allow and deny category
+20. Consumed component compliance: every consumed component's `source` package satisfies the active `package_policy` (not in a denied category; if in no allowed category, the consumed component must have rationale)
+21. Package policy coverage: every system with consumed components is subject to at least one `package_policy`
+22. Platform realization consistency: every authored component appears in exactly one solution folder; no project listed in a solution folder is undeclared as a component
+23. Startup project resolution: the `startup` project references a declared authored component with an executable kind (application, host, etc.)
+24. Solution-system alignment: the `dotnet solution` name resolves to a declared `system`; format matches target (slnx for net10.0+)
+
+Deployment specification checks (4):
+
+25. Deployment instance resolution: every `instance:` references a declared authored component in the system tree
+26. Deployment coverage: every authored component with a host or application kind appears in at least one deployment environment (quality warning, not error)
+27. Deployment node nesting: no circular nesting; node names are unique within a deployment environment
+28. Deployment environment naming: deployment names are unique across all deployment declarations
+
+View and dynamic specification checks (5):
+
+29. View scope resolution: the `of` clause references a declared system (for systemContext, container), container (for component), or deployment environment (for deployment)
+30. View filter resolution: explicit element lists reference declared persons, systems, external systems, or components; tagged filters reference tags that exist on at least one element
+31. View kind consistency: systemLandscape views do not use `of`; systemContext, container, component, and deployment views require `of`
+32. Dynamic step endpoint resolution: every source and target in a dynamic step references a declared person, system, external system, or component
+33. Dynamic step ordering: sequence numbers are unique and contiguous within a dynamic declaration (warning on gaps)
 
 Design specification checks (5):
 
-21. Page host resolution: `host:` references a declared authored component with a host kind (application, blazor-wasm-host, etc.)
-22. Page concept resolution: `concepts:` entries reference identifiers that appear as trace sources in a declared `trace` block
-23. Visualization page resolution: `page:` references a declared page
-24. Visualization component resolution: `component:` references a chart component that appears in a phase `produces` list or a `trace` source
-25. Slider-parameter consistency: every identifier in `sliders:` appears as a parameter name in the visualization's `parameters` block or in the parameter binding expressions
+34. Page host resolution: `host:` references a declared authored component with a host kind (application, blazor-wasm-host, etc.)
+35. Page concept resolution: `concepts:` entries reference identifiers that appear as trace sources in a declared `trace` block
+36. Visualization page resolution: `page:` references a declared page
+37. Visualization component resolution: `component:` references a chart component that appears in a phase `produces` list or a `trace` source
+38. Slider-parameter consistency: every identifier in `sliders:` appears as a parameter name in the visualization's `parameters` block or in the parameter binding expressions
 
 ### SpecChat.Protocol (the conversation)
 
@@ -924,9 +1188,30 @@ Projections are views of the specification, not its purpose. Each projection rea
 - **Traceability matrix projection** -- table mapping sources to targets across all trace declarations
 - **Package audit projection** -- table of all consumed packages across components, their categories, policy status (allowed/denied/requires-rationale), and declared reasons
 
+#### Context and view projections
+
+- **System context diagram projection** -- generated from person, external system, and relationship declarations: Mermaid, DOT, PlantUML, or Structurizr DSL rendering of C4 Level 1 showing the system, its users, and its external dependencies
+- **View diagram projection** -- each `view` declaration generates a diagram at the specified zoom level (systemLandscape, systemContext, container, component, deployment), filtered by include/exclude rules, with autoLayout hint applied
+- **Dynamic sequence projection** -- each `dynamic` declaration generates a numbered interaction diagram (Mermaid sequence diagram, PlantUML sequence, or DOT) showing runtime flow for a specific scenario
+- **Deployment diagram projection** -- generated from deployment declarations: infrastructure nodes with nested instances, rendered as Mermaid, DOT, or Structurizr DSL deployment views
+
 #### Cross-cutting projections
 
 - **Documentation projection** -- human-readable specification summary combining both data and systems views
+
+#### Inline diagram convention
+
+Mermaid diagrams may appear inline in `.spec.md` files as rendered companions to view, topology, deployment, and dynamic declarations. Each diagram is a ` ```mermaid ` fenced code block introduced by a one-line prose sentence (e.g., "Rendered system context:"). The diagram renders the data already declared in the adjacent ` ```spec ` block, following this mapping:
+
+| Declaration type | Mermaid diagram type | Notes |
+|---|---|---|
+| `view systemContext`, `view systemLandscape` | `C4Context` | Preserves Person/System semantic shapes |
+| `view container`, `view component` | `flowchart LR` with `classDef` | Flowchart provides left-right layout; C4 native only supports top-down |
+| `view deployment` | `C4Deployment` | Native nested `Deployment_Node` support |
+| `topology` | `flowchart LR` with `classDef` | Allow edges solid, deny edges dashed red via `linkStyle` |
+| `dynamic` | `sequenceDiagram` with `autonumber` | Preserves temporal ordering with numbered steps |
+
+Diagrams are not part of the formal specification. They are rendering artifacts that visualize the model for human readers. The spec blocks remain the source of truth; diagrams are regenerated from them. A `.spec.md` file is complete with or without inline diagrams.
 
 Projections are optional. A specification is complete without them.
 
@@ -946,6 +1231,16 @@ Evaluates the specification itself, independent of any LLM interaction. Detects 
 | Confidence gaps | Fields with no @confidence annotation |
 | No escape hatch | Entity with all required fields, no optionals, no unknown |
 | Dead invariants | Invariants that are tautologically true |
+
+#### Context specification quality checks
+
+| Check | What It Detects |
+|-------|----------------|
+| No persons declared | System has pages or visualizations but no person declarations (who is the audience?) |
+| Orphaned person | Person declared but not referenced in any relationship or dynamic step |
+| External system without rationale | External system declared with no rationale (integration chosen without recorded reasoning) |
+| Orphaned external system | External system declared but not referenced in any relationship, topology, or dynamic step |
+| Unconnected system | System declared with persons and/or external systems but no relationship declarations connecting them (context diagram is empty) |
 
 #### Systems specification quality checks
 
@@ -969,6 +1264,25 @@ Evaluates the specification itself, independent of any LLM interaction. Detects 
 | Orphaned from solution | Authored component declared in the system tree but not in any solution folder |
 | Legacy format on modern target | `dotnet solution` uses `format: sln` but system target is net10.0+ (should default to slnx) |
 
+#### Deployment specification quality checks
+
+| Check | What It Detects |
+|-------|----------------|
+| No deployment declared | System has authored components but no deployment declarations (where things run is unspecified) |
+| Undeployed component | Authored component with application or host kind not assigned to any deployment node's `instance` |
+| Empty deployment node | Deployment node with no instances and no child nodes (infrastructure declared but nothing runs on it) |
+| Deployment without rationale | Deployment environment with no rationale (infrastructure choices without recorded reasoning) |
+
+#### View and dynamic specification quality checks
+
+| Check | What It Detects |
+|-------|----------------|
+| No views declared | System has persons, external systems, and components but no view declarations (the model has no diagrams) |
+| View with no includes | View declared with no include filter (nothing visible; empty diagram) |
+| Dynamic with no steps | Dynamic declaration with no steps (scenario is empty) |
+| Dynamic step gap | Dynamic steps have non-contiguous sequence numbers (possible missing interaction) |
+| Unreferenced dynamic participant | Person or external system declared and appears in relationships but never in a dynamic step (static connections exist but no scenario exercises them) |
+
 #### Design specification quality checks
 
 | Check | What It Detects |
@@ -980,7 +1294,7 @@ Evaluates the specification itself, independent of any LLM interaction. Detects 
 | Orphaned page | Page not referenced by any trace target list (a page exists but no domain concept maps to it) |
 | Disconnected visualization | Visualization whose component does not appear in any ComponentsToChartTypes trace (the component is used but not tracked) |
 
-Quality score (0-100) with explanatory diagnostics. Not pass/fail; a feedback signal. Data and systems checks contribute independently; a specification with perfect entity coverage but no topology is flagged for architectural under-specification, not penalized on entity quality.
+Quality score (0-100) with explanatory diagnostics. Not pass/fail; a feedback signal. Data, context, systems, deployment, view/dynamic, and design checks contribute independently; a specification with perfect entity coverage but no topology is flagged for architectural under-specification, not penalized on entity quality. A specification with systems and deployment but no context is flagged for missing stakeholder identification.
 
 ## Project Structure
 
@@ -1006,7 +1320,7 @@ SpecChat/
     coffee-order.spec.md         -- data specification: entities, invariants, confidence
     calendar-intent.spec.md      -- data specification: extraction protocol
     api-gateway.spec.md          -- mixed: data entities + system contracts
-    analytics-dashboard.spec.md  -- mixed: systems specification (components, topology, phases, traces, constraints, package policy, platform realization) + data specification (metric model entities)
+    analytics-dashboard.spec.md  -- mixed: context specification (persons, external systems, relationships) + systems specification (components, topology, phases, traces, constraints, package policy, platform realization) + deployment specification (environments, nodes, instances) + views and dynamic (diagram projections, interaction sequences) + data specification (metric model entities)
 ```
 
 All projects target net10.0 with nullable enabled.
@@ -1029,6 +1343,10 @@ spec refine order.spec.md                    -- trace refinement links
 spec topology analytics-dashboard.spec.md                -- visualize and validate component dependency rules
 spec phases analytics-dashboard.spec.md                  -- show phase ordering with gate status
 spec trace analytics-dashboard.spec.md                   -- show cross-reference coverage
+spec context analytics-dashboard.spec.md                 -- show system context diagram (persons, external systems, relationships)
+spec deployment analytics-dashboard.spec.md              -- show deployment environments with infrastructure nodes
+spec views analytics-dashboard.spec.md                   -- list declared views with scope and filters
+spec dynamic analytics-dashboard.spec.md                 -- show dynamic interaction sequences
 ```
 
 ## Implementation Phases
@@ -1040,19 +1358,23 @@ spec trace analytics-dashboard.spec.md                   -- show cross-reference
 - Sample: coffee-order.spec.md parsed and analyzed end-to-end
 - Tests: parser tests, semantic analysis tests for all data constructs
 
-### Phase 2: Systems Model and Language
-- SpecChat.Core: systems specification AST nodes (SystemDecl, AuthoredComponentDecl, ConsumedComponentDecl, TopologyDecl, DependencyRule, PhaseDecl, GateDecl, TraceDecl, TraceLink, ConstraintDecl, PackagePolicyDecl, CategoryRule, PlatformRealizationDecl, DotNetSolutionDecl, SolutionFolderDecl)
-- SpecChat.Language: extended Lexer and Parser for systems keywords; SemanticAnalyzer (checks 8-20)
-- SpecChat.Cli: `spec check` extended for systems specification; `spec topology`, `spec phases`, `spec trace` commands
-- Sample: analytics-dashboard.spec.md parsed and analyzed end-to-end (a Blazor WebAssembly dashboard, expressed in SpecChat syntax)
-- Tests: parser tests for all systems constructs, semantic analysis tests for topology validation, phase ordering, trace resolution
+### Phase 2: Context and Systems Model
+- SpecChat.Core: context specification AST nodes (PersonDecl, ExternalSystemDecl, RelationshipDecl, TagAnnotation)
+- SpecChat.Core: systems specification AST nodes (SystemDecl, AuthoredComponentDecl, ConsumedComponentDecl, TopologyDecl, DependencyRule with enriched edges, PhaseDecl, GateDecl, TraceDecl, TraceLink, ConstraintDecl, PackagePolicyDecl, CategoryRule, PlatformRealizationDecl, DotNetSolutionDecl, SolutionFolderDecl)
+- SpecChat.Language: extended Lexer and Parser for context and systems keywords; SemanticAnalyzer (checks 8-24)
+- SpecChat.Cli: `spec check` extended for context and systems specification; `spec topology`, `spec phases`, `spec trace` commands
+- Sample: analytics-dashboard.spec.md parsed and analyzed end-to-end (a Blazor WebAssembly dashboard, expressed in SpecChat syntax, with persons, external systems, and relationships)
+- Tests: parser tests for all context and systems constructs, semantic analysis tests for person resolution, relationship endpoints, topology validation, phase ordering, trace resolution
 
-### Phase 3: Design Model and Prose Intent
+### Phase 3: Deployment, Views, Dynamic, and Design Model
+- SpecChat.Core: deployment specification AST nodes (DeploymentDecl, DeploymentNodeDecl)
+- SpecChat.Core: view specification AST nodes (ViewDecl, ViewFilter)
+- SpecChat.Core: dynamic specification AST nodes (DynamicDecl, DynamicStep)
 - SpecChat.Core: design specification AST nodes (PageDecl, VisualizationDecl, ParameterBindingDecl, ProseIntent)
-- SpecChat.Language: extended markdown extractor for prose context association (heading + keyword context opening); extended Lexer and Parser for `page`, `visualization`, `parameters` keywords; SemanticAnalyzer (checks 21-25)
-- SpecChat.Cli: `spec check` extended for design specification
-- Sample: analytics-dashboard.spec.md extended with ExecutiveDashboard page and its visualizations, interleaved with prose intent
-- Tests: parser tests for page/visualization constructs, prose-intent association tests, semantic analysis tests for host resolution, concept resolution, component resolution, slider-parameter consistency
+- SpecChat.Language: extended markdown extractor for prose context association (heading + keyword context opening); extended Lexer and Parser for `deployment`, `view`, `dynamic`, `page`, `visualization`, `parameters` keywords; SemanticAnalyzer (checks 25-38)
+- SpecChat.Cli: `spec check` extended for deployment, views, dynamic, and design specification
+- Sample: analytics-dashboard.spec.md extended with deployment environments, views, a dynamic scenario, ExecutiveDashboard page and its visualizations, interleaved with prose intent
+- Tests: parser tests for deployment/view/dynamic/page/visualization constructs, prose-intent association tests, semantic analysis tests for deployment instance resolution, view scope resolution, dynamic step endpoints, host resolution, concept resolution, component resolution, slider-parameter consistency
 
 ### Phase 4: Conversation Protocol
 - SpecChat.Protocol: prompt construction from specification model (all three registers: data, systems, design)
@@ -1073,6 +1395,7 @@ spec trace analytics-dashboard.spec.md                   -- show cross-reference
 ### Phase 6: Projections
 - Data projections: C#, TypeScript, Python, JSON Schema
 - Systems projections: solution structure, dependency graph (Mermaid/DOT), phase plan, traceability matrix
+- Context projections: system context diagram, view diagrams (Mermaid/DOT/Structurizr DSL), dynamic sequence diagrams, deployment diagrams
 - Documentation projection (cross-cutting)
 - SpecChat.Cli: `spec project` command with all targets
 
@@ -1087,7 +1410,7 @@ spec trace analytics-dashboard.spec.md                   -- show cross-reference
 
 1. **The specification is the primary artifact.** Generated code, validation logic, solution structures, and prompts are projections of the specification. They are secondary and optional.
 2. **The conversation is the interface.** SpecChat is not a compiler; it is a communication protocol. The human authors specifications; the LLM realizes within them; the protocol governs the exchange.
-3. **Data and systems specification are peers, not layers.** Both live in the same `.spec.md` document. Neither is subordinate to the other. A specification can contain only data constructs, only systems constructs, or both. The quality analyzer evaluates each independently.
+3. **All five registers are peers, not layers.** Context, data, systems, deployment, and view/dynamic specifications all live in the same `.spec.md` document. None is subordinate to another. A specification can contain any combination of registers. The quality analyzer evaluates each independently.
 4. **Expression language is not Turing-complete**: comparisons, boolean logic, membership tests, count/exists/all. No loops, no variables, no function definitions.
 5. **Complexity is opt-in**: a specification can start with entity + enum only, or with component + topology only. All other constructs (invariants, contracts, rationale, confidence, phases, traces, constraints) are optional. The language grows with the specifier's ambition.
 6. **Prohibitions are first-class.** The `deny` keyword in topology and the `constraint` construct exist because architectural prohibitions are load-bearing. They prevent entropy. A specification language that can only express permissions is half a language.
@@ -1096,9 +1419,13 @@ spec trace analytics-dashboard.spec.md                   -- show cross-reference
 9. **Transparent conversation over silent repair**: full conversation history is always available. The developer sees what the LLM attempted, what failed, what was corrected, what remains uncertain. Consistent with FORCE preservation (Eq. 11).
 10. **No dependencies on existing type-chat or schema libraries.** SpecChat is standalone. Useful ideas from prior work are adopted as patterns, not as source code or package dependencies.
 11. **The decomposition tree distinguishes authored from consumed.** Every node in the system tree has a disposition: `authored` (we write this) or `consumed` (we use this). Authored components carry internal structure, phases, and gates. Consumed components carry boundary contracts, version constraints, and rationale for why they were chosen. The specifier does not describe the internals of consumed nodes. This mirrors Aspire's insight: `AddPostgres("db")` does not mean "write a database." It means "this system includes a Postgres database." Package policies (`package_policy`) govern what may be consumed, with allow/deny categories and a default that requires justification. This is not dependency management (that is what NuGet, npm, and Cargo do). This is dependency governance: the specification-level decision about what enters the system and why.
-12. **Systems specification scope is evidence-driven.** The seven systems construct families (component, topology, phase, trace, constraint, package policy, platform realization) are drawn from what real project specification practice proved to be load-bearing. Additional constructs (state machines, event flows, deployment topology) are deferred until evidence from practice demands them.
+12. **Systems specification scope is evidence-driven.** The systems construct families (component, topology, phase, trace, constraint, package policy, platform realization) are drawn from what real project specification practice proved to be load-bearing. Context specification (persons, external systems, relationships) was added because C4 practice demonstrates that identifying stakeholders and external dependencies before decomposing internals prevents architectural blind spots. Deployment specification was added because the gap between "what you build" and "where it runs" is where production incidents hide. Views and dynamics were added because a single model needs multiple projections at different zoom levels, and static topology alone cannot capture runtime interaction sequences.
+13. **Model-vs-views separation.** The model (persons, systems, components, external systems, deployment nodes) is defined once. Views select subsets for visualization. This prevents the fragmentation that occurs when each diagram is an independent artifact with its own definitions. Changes to the model propagate to all views automatically.
+14. **Context before decomposition.** Person and external system declarations force the specifier to answer "who uses this?" and "what does it talk to?" before diving into internal structure. This is the C4 Level 1 discipline: the outermost zoom level is where the most consequential architectural decisions are visible.
 
 ## Reference Files
 
-- `Docs/Spec-Chat/SpecLang-Grammar.md` -- formal grammar (EBNF): lexer tokens, expression language, DSL productions, ambiguity resolution, parser architecture
+- `Docs/Spec-Chat/SpecLang-Grammar.md` -- formal grammar (EBNF): lexer tokens, expression language, DSL productions (data, context, systems, deployment, view/dynamic, design), ambiguity resolution, parser architecture
 - `Docs/Enquiry-Into-Specification-as-Meaningful-Struggle.md` -- theoretical foundation (the Enquiry)
+- C4 Model (https://c4model.com) -- the abstraction-level framework that informed context, deployment, and view constructs
+- Structurizr DSL (https://structurizr.com) -- the model-vs-views separation principle that informed view declarations
