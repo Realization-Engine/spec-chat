@@ -134,6 +134,7 @@ public enum TokenKind
     Question,
     At,
     Arrow,
+    Minus,
     DotDot,
     Eq,
     Neq,

@@ -17,10 +17,12 @@ public static class SpecValidationTools
 
         try
         {
-            var (document, diagnostics) = SpecFileHelper.ParseFile(filePath);
+            var (document, diagnostics, specBlocks, mermaidBlocks) =
+                SpecFileHelper.ParseFileWithBlocks(filePath);
 
             var analyzer = new SemanticAnalyzer(diagnostics);
             analyzer.Analyze(document);
+            analyzer.CheckDiagramCompanions(document, specBlocks, mermaidBlocks);
 
             var result = new Dictionary<string, object>
             {

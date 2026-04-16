@@ -532,6 +532,97 @@ public sealed class SemanticAnalyzer
         }
     }
 
+    // ── Diagram companion checks ────────────────────────────────────
+
+    /// <summary>
+    /// Checks that every view, topology, and dynamic declaration has a
+    /// companion mermaid block in the surrounding markdown. Reports a
+    /// warning for each declaration that lacks a rendered diagram.
+    /// </summary>
+    /// <param name="document">The parsed spec document.</param>
+    /// <param name="specBlocks">Spec blocks extracted from the markdown, in document order.</param>
+    /// <param name="mermaidBlocks">Mermaid blocks extracted from the markdown, in document order.</param>
+    public void CheckDiagramCompanions(
+        SpecDocument document,
+        List<SpecBlock> specBlocks,
+        List<MermaidBlock> mermaidBlocks)
+    {
+        // Collect all declarations that require companion diagrams.
+        var diagramDecls = new List<(TopLevelDecl Decl, string Kind)>();
+        foreach (var decl in document.Declarations)
+        {
+            switch (decl)
+            {
+                case ViewDecl v:
+                    diagramDecls.Add((v, "View"));
+                    break;
+                case TopologyDecl t:
+                    diagramDecls.Add((t, "Topology"));
+                    break;
+                case DynamicDecl d:
+                    diagramDecls.Add((d, "Dynamic"));
+                    break;
+            }
+        }
+
+        if (diagramDecls.Count == 0 || specBlocks.Count == 0)
+            return;
+
+        // Sort spec blocks by start line for binary search.
+        var sortedSpecBlocks = specBlocks.OrderBy(b => b.StartLine).ToList();
+
+        foreach (var (decl, kind) in diagramDecls)
+        {
+            int declLine = decl.Location.Line;
+
+            // Find the spec block that contains this declaration.
+            SpecBlock? containingBlock = null;
+            for (int i = sortedSpecBlocks.Count - 1; i >= 0; i--)
+            {
+                if (sortedSpecBlocks[i].StartLine <= declLine && sortedSpecBlocks[i].EndLine >= declLine)
+                {
+                    containingBlock = sortedSpecBlocks[i];
+                    break;
+                }
+            }
+
+            if (containingBlock is null)
+                continue;
+
+            // Find the next spec block after this one (if any).
+            int nextSpecStart = int.MaxValue;
+            for (int i = 0; i < sortedSpecBlocks.Count; i++)
+            {
+                if (sortedSpecBlocks[i].StartLine > containingBlock.EndLine)
+                {
+                    nextSpecStart = sortedSpecBlocks[i].StartLine;
+                    break;
+                }
+            }
+
+            // Check whether a mermaid block exists between the containing
+            // spec block's end and the next spec block's start.
+            bool hasMermaid = mermaidBlocks.Any(m =>
+                m.StartLine > containingBlock.EndLine &&
+                m.StartLine < nextSpecStart);
+
+            if (!hasMermaid)
+            {
+                string name = decl switch
+                {
+                    ViewDecl v => v.Name,
+                    TopologyDecl t => t.Name,
+                    DynamicDecl d => d.Name,
+                    _ => "unknown",
+                };
+                _diagnostics.ReportWarning(decl.Location,
+                    $"{kind} '{name}' has no companion mermaid diagram. " +
+                    "The inline diagram convention requires a rendered mermaid " +
+                    "block following each view, topology, and dynamic declaration.");
+            }
+        }
+    }
+
     // ── Helpers ─────────────────────────────────────────────────────
 
     private static HashSet<string> CollectDeclaredComponents(SpecDocument document)

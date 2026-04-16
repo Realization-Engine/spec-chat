@@ -1816,7 +1816,19 @@ public sealed partial class Parser
         Expect(TokenKind.KwView);
 
         // Parse ViewKind (an identifier like "systemContext", "container", etc.)
-        string kindText = ExpectName();
+        // "component" and "deployment" are lexed as keywords, so accept them here.
+        string kindText;
+        if (Check(TokenKind.Ident) || Check(TokenKind.DottedIdent))
+            kindText = Advance().Text;
+        else if (Check(TokenKind.KwComponent))
+            kindText = Advance().Text;
+        else if (Check(TokenKind.KwDeployment))
+            kindText = Advance().Text;
+        else
+        {
+            ReportError($"Expected view kind, got {Peek().Kind} ('{Peek().Text}')");
+            kindText = "<missing>";
+        }
         ViewKind kind = kindText switch
         {
             "systemLandscape" => ViewKind.SystemLandscape,
@@ -1870,14 +1882,21 @@ public sealed partial class Parser
             {
                 Advance();
                 Expect(TokenKind.Colon);
-                // Layout direction values are hyphenated (top-down), so they
-                // must be parsed as identifiers. The lexer sees "top" as an
-                // IDENT, then "->" would fail. Accept both IDENT and STRING.
+                // Layout direction values may be hyphenated (top-down) or
+                // camelCase (topDown). Accept STRING, IDENT, or IDENT-Minus-IDENT.
                 string dirText;
                 if (Check(TokenKind.String))
                     dirText = StripQuotes(Advance().Text);
                 else if (Check(TokenKind.Ident) || Check(TokenKind.DottedIdent))
+                {
                     dirText = Advance().Text;
+                    // Consume hyphenated form: IDENT "-" IDENT (e.g., top-down)
+                    if (Check(TokenKind.Minus) && PeekAhead(1).Kind == TokenKind.Ident)
+                    {
+                        Advance(); // consume "-"
+                        dirText += "-" + Advance().Text;
+                    }
+                }
                 else
                 {
                     ReportError("Expected layout direction (top-down, left-right, bottom-up, right-left)");
@@ -1885,10 +1904,10 @@ public sealed partial class Parser
                 }
                 autoLayout = dirText switch
                 {
-                    "top-down" => LayoutDirection.TopDown,
-                    "left-right" => LayoutDirection.LeftRight,
-                    "bottom-up" => LayoutDirection.BottomUp,
-                    "right-left" => LayoutDirection.RightLeft,
+                    "top-down" or "topDown" => LayoutDirection.TopDown,
+                    "left-right" or "leftRight" => LayoutDirection.LeftRight,
+                    "bottom-up" or "bottomUp" => LayoutDirection.BottomUp,
+                    "right-left" or "rightLeft" => LayoutDirection.RightLeft,
                     _ => LayoutDirection.TopDown,
                 };
                 Expect(TokenKind.Semicolon);
@@ -2377,6 +2396,13 @@ public sealed partial class Parser
                 // CallExpr with an implicit "self" target
                 return new CallExpr(new IdentifierExpr(name, loc), name, args, loc);
             }
+            return new IdentifierExpr(name, loc);
+        }
+
+        // Contextual keyword used as identifier in expression (e.g., status == Delivered)
+        if (IsContextualKeyword(Peek().Kind))
+        {
+            string name = Advance().Text;
             return new IdentifierExpr(name, loc);
         }
 

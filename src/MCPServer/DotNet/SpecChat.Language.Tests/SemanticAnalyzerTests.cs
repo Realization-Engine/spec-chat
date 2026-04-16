@@ -140,4 +140,141 @@ public class SemanticAnalyzerTests
             .ToList();
         Assert.Empty(errors);
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  DIAGRAM COMPANION CHECKS
+    // ═══════════════════════════════════════════════════════════════
+
+    private static (SpecDocument Doc, List<SpecBlock> SpecBlocks, List<MermaidBlock> MermaidBlocks)
+        ParseMarkdown(string markdown, DiagnosticBag diagnostics)
+    {
+        var extractor = new SpecBlockExtractor();
+        var specBlocks = extractor.Extract(markdown, "test.spec.md", diagnostics);
+        var mermaidBlocks = extractor.ExtractMermaidBlocks(markdown, "test.spec.md");
+        var allDecls = new List<TopLevelDecl>();
+
+        foreach (var block in specBlocks)
+        {
+            var lexer = new Lexer(block.Content, block.FilePath, block.StartLine, diagnostics);
+            var tokens = lexer.Tokenize();
+            var parser = new Parser(tokens, block.FilePath, diagnostics);
+            var doc = parser.Parse();
+            allDecls.AddRange(doc.Declarations);
+        }
+
+        var document = new SpecDocument(allDecls, new SourceLocation("test.spec.md", 1, 1, 0));
+        return (document, specBlocks, mermaidBlocks);
+    }
+
+    [Fact]
+    public void CheckDiagramCompanions_ViewWithMermaid_NoWarning()
+    {
+        string markdown = @"# Views
+
+```spec
+view systemContext of App ContextView {
+    include: all;
+    description: ""The system context."";
+}
+```
+
+Rendered system context:
+
+```mermaid
+C4Context
+    title System Context
+```
+";
+        var parseDiag = new DiagnosticBag();
+        var (doc, specBlocks, mermaidBlocks) = ParseMarkdown(markdown, parseDiag);
+
+        var semanticDiag = new DiagnosticBag();
+        var analyzer = new SemanticAnalyzer(semanticDiag);
+        analyzer.CheckDiagramCompanions(doc, specBlocks, mermaidBlocks);
+
+        var warnings = semanticDiag.Diagnostics
+            .Where(d => d.Message.Contains("companion mermaid"))
+            .ToList();
+        Assert.Empty(warnings);
+    }
+
+    [Fact]
+    public void CheckDiagramCompanions_ViewWithoutMermaid_Warning()
+    {
+        string markdown = @"# Views
+
+```spec
+view systemContext of App ContextView {
+    include: all;
+    description: ""The system context."";
+}
+```
+
+No diagram here, just prose.
+";
+        var parseDiag = new DiagnosticBag();
+        var (doc, specBlocks, mermaidBlocks) = ParseMarkdown(markdown, parseDiag);
+
+        var semanticDiag = new DiagnosticBag();
+        var analyzer = new SemanticAnalyzer(semanticDiag);
+        analyzer.CheckDiagramCompanions(doc, specBlocks, mermaidBlocks);
+
+        var warnings = semanticDiag.Diagnostics
+            .Where(d => d.Message.Contains("companion mermaid"))
+            .ToList();
+        Assert.Single(warnings);
+        Assert.Contains("ContextView", warnings[0].Message);
+    }
+
+    [Fact]
+    public void CheckDiagramCompanions_DynamicWithoutMermaid_Warning()
+    {
+        string markdown = @"# Dynamic
+
+```spec
+dynamic PlaceOrder {
+    1: User -> App : ""Opens page."";
+    2: App -> User : ""Shows result."";
+}
+```
+";
+        var parseDiag = new DiagnosticBag();
+        var (doc, specBlocks, mermaidBlocks) = ParseMarkdown(markdown, parseDiag);
+
+        var semanticDiag = new DiagnosticBag();
+        var analyzer = new SemanticAnalyzer(semanticDiag);
+        analyzer.CheckDiagramCompanions(doc, specBlocks, mermaidBlocks);
+
+        var warnings = semanticDiag.Diagnostics
+            .Where(d => d.Message.Contains("companion mermaid"))
+            .ToList();
+        Assert.Single(warnings);
+        Assert.Contains("PlaceOrder", warnings[0].Message);
+    }
+
+    [Fact]
+    public void CheckDiagramCompanions_TopologyWithoutMermaid_Warning()
+    {
+        string markdown = @"# Topology
+
+```spec
+topology Deps {
+    allow App -> Engine;
+    deny Engine -> App;
+}
+```
+";
+        var parseDiag = new DiagnosticBag();
+        var (doc, specBlocks, mermaidBlocks) = ParseMarkdown(markdown, parseDiag);
+
+        var semanticDiag = new DiagnosticBag();
+        var analyzer = new SemanticAnalyzer(semanticDiag);
+        analyzer.CheckDiagramCompanions(doc, specBlocks, mermaidBlocks);
+
+        var warnings = semanticDiag.Diagnostics
+            .Where(d => d.Message.Contains("companion mermaid"))
+            .ToList();
+        Assert.Single(warnings);
+        Assert.Contains("Deps", warnings[0].Message);
+    }
 }

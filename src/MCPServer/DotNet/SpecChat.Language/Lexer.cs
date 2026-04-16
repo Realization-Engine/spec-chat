@@ -420,10 +420,9 @@ public sealed class Lexer
                     Advance();
                     return MakeToken(TokenKind.Arrow, "->", startLine, startCol);
                 }
-                // Single '-' is not valid
+                // Single '-' (used in hyphenated identifiers like autoLayout: top-down)
                 Advance();
-                ReportError(startLine, startCol, "Unexpected character '-'. Did you mean '->'?");
-                return MakeToken(TokenKind.Ident, "-", startLine, startCol);
+                return MakeToken(TokenKind.Minus, "-", startLine, startCol);
 
             // DOT and DOTDOT (rule 1.4.4)
             case '.':

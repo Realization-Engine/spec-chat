@@ -426,6 +426,67 @@ view systemContext of App Filtered {
         Assert.Equal(3, view.Include.ExplicitElements.Count);
     }
 
+    [Fact]
+    public void Parse_ViewDecl_ComponentKind()
+    {
+        var doc = ParseSource(@"
+view component of App.Api ApiComponentView {
+    include: all;
+}");
+        Assert.Single(doc.Declarations);
+        var view = Assert.IsType<ViewDecl>(doc.Declarations[0]);
+        Assert.Equal(ViewKind.Component, view.Kind);
+        Assert.Equal("App.Api", view.Scope);
+        Assert.Equal("ApiComponentView", view.Name);
+    }
+
+    [Fact]
+    public void Parse_ViewDecl_DeploymentKind()
+    {
+        var doc = ParseSource(@"
+view deployment of Production ProdDeployView {
+    include: all;
+}");
+        Assert.Single(doc.Declarations);
+        var view = Assert.IsType<ViewDecl>(doc.Declarations[0]);
+        Assert.Equal(ViewKind.Deployment, view.Kind);
+        Assert.Equal("Production", view.Scope);
+        Assert.Equal("ProdDeployView", view.Name);
+    }
+
+    [Fact]
+    public void Parse_ViewDecl_AutoLayoutHyphenated()
+    {
+        var diagnostics = new DiagnosticBag();
+        var doc = ParseSource(@"
+view systemContext of App ContextView {
+    include: all;
+    autoLayout: top-down;
+}", diagnostics);
+        Assert.False(diagnostics.HasErrors,
+            string.Join("; ", diagnostics.Diagnostics.Select(d => d.Message)));
+        var view = Assert.IsType<ViewDecl>(doc.Declarations[0]);
+        Assert.Equal(LayoutDirection.TopDown, view.AutoLayout);
+    }
+
+    [Fact]
+    public void Parse_Expr_ContextualKeywordAsIdentifier()
+    {
+        var doc = ParseSource(@"
+entity Order {
+    status: string;
+    completedAt: string;
+    invariant ""delivered has timestamp"": status == Delivered implies completedAt != null;
+}");
+        Assert.Single(doc.Declarations);
+        var entity = Assert.IsType<EntityDecl>(doc.Declarations[0]);
+        Assert.Single(entity.Invariants);
+        var inv = entity.Invariants[0];
+        // Top-level expression should be "implies" (status == Delivered implies completedAt != null)
+        var impliesExpr = Assert.IsType<BinaryExpr>(inv.Condition);
+        Assert.Equal("implies", impliesExpr.Operator);
+    }
+
     // ═══════════════════════════════════════════════════════════════
     //  DYNAMIC SPECIFICATION TESTS
     // ═══════════════════════════════════════════════════════════════

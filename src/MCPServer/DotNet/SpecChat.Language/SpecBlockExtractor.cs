@@ -31,6 +31,19 @@ public sealed record SpecBlock(
     SpecBlockContext Context);
 
 /// <summary>
+/// A mermaid fenced code block found in a .spec.md file, tracked by line range.
+/// Used by quality checks to verify that view, topology, and dynamic declarations
+/// have companion rendered diagrams.
+/// </summary>
+/// <param name="StartLine">1-based line number of the opening ```mermaid fence.</param>
+/// <param name="EndLine">1-based line number of the closing ``` fence.</param>
+/// <param name="FilePath">Path to the source file.</param>
+public sealed record MermaidBlock(
+    int StartLine,
+    int EndLine,
+    string FilePath);
+
+/// <summary>
 /// Prose text that falls within a page or visualization context, preserved
 /// for association with the parent PageDecl or VisualizationDecl in the AST.
 /// </summary>
@@ -392,6 +405,58 @@ public sealed class SpecBlockExtractor
             return level;
 
         return 0;
+    }
+
+    /// <summary>
+    /// Extract all mermaid fenced code blocks from the given markdown content.
+    /// Returns only line ranges, not content. Used by quality checks to verify
+    /// that view, topology, and dynamic declarations have companion diagrams.
+    /// </summary>
+    public List<MermaidBlock> ExtractMermaidBlocks(string markdownContent, string filePath)
+    {
+        const string mermaidFenceOpen = "```mermaid";
+
+        var blocks = new List<MermaidBlock>();
+        var lines = SplitLines(markdownContent);
+
+        bool insideFence = false;
+        bool insideMermaid = false;
+        int fenceStartLine = 0;
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            int lineNumber = i + 1; // 1-based
+            string trimmed = lines[i].Trim();
+
+            if (insideFence)
+            {
+                if (trimmed == FenceClose)
+                {
+                    if (insideMermaid)
+                        blocks.Add(new MermaidBlock(fenceStartLine, lineNumber, filePath));
+                    insideFence = false;
+                    insideMermaid = false;
+                }
+            }
+            else
+            {
+                if (trimmed == mermaidFenceOpen)
+                {
+                    insideFence = true;
+                    insideMermaid = true;
+                    fenceStartLine = lineNumber;
+                }
+                else if (trimmed.StartsWith("```") && trimmed.Length > 3)
+                {
+                    // Some other fenced block (spec, csharp, json, etc.); skip it
+                    insideFence = true;
+                    insideMermaid = false;
+                    fenceStartLine = lineNumber;
+                }
+            }
+        }
+
+        return blocks;
     }
 
     /// <summary>

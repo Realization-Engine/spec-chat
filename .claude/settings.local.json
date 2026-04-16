@@ -78,7 +78,8 @@
       "WebFetch(domain:mermaid.js.org)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(cp \"Delivery/spec-chat/samples/blazor-harness.spec.md\" \"tests/fixtures/blazor-harness.spec.md\")",
-      "Bash(wc -l /e/Archive/GitHub/dlandi/spec-chat/src/MCPServer/DotNet/SpecChat.Language.Tests/*.cs)"
+      "Bash(wc -l /e/Archive/GitHub/dlandi/spec-chat/src/MCPServer/DotNet/SpecChat.Language.Tests/*.cs)",
+      "mcp__spec-chat__list_constructs"
     ]
   }
 }

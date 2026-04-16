@@ -99,6 +99,61 @@ More text here.
     }
 
     [Fact]
+    public void ExtractMermaidBlocks_FindsMermaidFences()
+    {
+        string markdown = """
+            # Title
+
+            ```spec
+            entity Foo { id: int; }
+            ```
+
+            Rendered diagram:
+
+            ```mermaid
+            flowchart LR
+                A --> B
+            ```
+
+            ## Next Section
+
+            ```mermaid
+            sequenceDiagram
+                A->>B: hello
+            ```
+            """;
+        var extractor = new SpecBlockExtractor();
+        var blocks = extractor.ExtractMermaidBlocks(markdown, "test.spec.md");
+
+        Assert.Equal(2, blocks.Count);
+        Assert.True(blocks[0].StartLine < blocks[1].StartLine);
+    }
+
+    [Fact]
+    public void ExtractMermaidBlocks_IgnoresOtherFences()
+    {
+        string markdown = """
+            # Title
+
+            ```spec
+            entity Foo { id: int; }
+            ```
+
+            ```csharp
+            var x = 1;
+            ```
+
+            ```json
+            { "key": "value" }
+            ```
+            """;
+        var extractor = new SpecBlockExtractor();
+        var blocks = extractor.ExtractMermaidBlocks(markdown, "test.spec.md");
+
+        Assert.Empty(blocks);
+    }
+
+    [Fact]
     public void Extract_BlazerHarness_ExtractsAllBlocks()
     {
         string content = File.ReadAllText(FixturePath("blazor-harness.spec.md"));

@@ -1201,17 +1201,21 @@ Projections are views of the specification, not its purpose. Each projection rea
 
 #### Inline diagram convention
 
-Mermaid diagrams may appear inline in `.spec.md` files as rendered companions to view, topology, deployment, and dynamic declarations. Each diagram is a ` ```mermaid ` fenced code block introduced by a one-line prose sentence (e.g., "Rendered system context:"). The diagram renders the data already declared in the adjacent ` ```spec ` block, following this mapping:
+Every `view`, `topology`, and `dynamic` declaration in a `.spec.md` file must be accompanied by a rendered Mermaid diagram immediately following the ` ```spec ` block that contains the declaration. Each diagram is a ` ```mermaid ` fenced code block introduced by a one-line prose label (e.g., "Rendered system context:", "Rendered interaction sequence:"). The diagram renders the data already declared in the adjacent spec block, following this mapping:
 
-| Declaration type | Mermaid diagram type | Notes |
-|---|---|---|
-| `view systemContext`, `view systemLandscape` | `C4Context` | Preserves Person/System semantic shapes |
-| `view container`, `view component` | `flowchart LR` with `classDef` | Flowchart provides left-right layout; C4 native only supports top-down |
-| `view deployment` | `C4Deployment` | Native nested `Deployment_Node` support |
-| `topology` | `flowchart LR` with `classDef` | Allow edges solid, deny edges dashed red via `linkStyle` |
-| `dynamic` | `sequenceDiagram` with `autonumber` | Preserves temporal ordering with numbered steps |
+| Declaration type | Mermaid diagram type | Required | Notes |
+|---|---|---|---|
+| `view systemContext`, `view systemLandscape` | `C4Context` | Yes | Preserves Person/System semantic shapes |
+| `view container`, `view component` | `flowchart LR` with `classDef` | Yes | Flowchart provides left-right layout; C4 native only supports top-down |
+| `view deployment` | `C4Deployment` | Yes | Native nested `Deployment_Node` support |
+| `topology` | `flowchart LR` with `classDef` | Yes | Allow edges solid, deny edges dashed red via `linkStyle` |
+| `dynamic` | `sequenceDiagram` with `autonumber` | Yes | Preserves temporal ordering with numbered steps |
 
-Diagrams are not part of the formal specification. They are rendering artifacts that visualize the model for human readers. The spec blocks remain the source of truth; diagrams are regenerated from them. A `.spec.md` file is complete with or without inline diagrams.
+**Rationale for mandatory diagrams.** Views and dynamics are architectural diagram projections by definition. A view declaration without a rendered diagram is a description of a diagram that no one can see. The spec block declares what to show; the mermaid block shows it. Both are necessary. The spec block is machine-parseable and carries the formal semantics. The mermaid block is human-readable and provides immediate visual feedback. Omitting either half weakens the specification: a diagram without a spec block is an unanchored picture; a spec block without a diagram is an invisible projection.
+
+When multiple views share overlapping content (e.g., a `systemLandscape` and a `systemContext` that render the same actors and system), each still requires its own diagram. The views exist at different zoom levels with different purposes; collapsing their diagrams defeats the model-vs-views separation principle.
+
+Diagrams are not part of the formal specification model. They are mandatory rendering artifacts that visualize the model for human readers. The spec blocks remain the source of truth; diagrams are regenerated from them when the model changes.
 
 Projections are optional. A specification is complete without them.
 
@@ -1279,7 +1283,10 @@ Evaluates the specification itself, independent of any LLM interaction. Detects 
 |-------|----------------|
 | No views declared | System has persons, external systems, and components but no view declarations (the model has no diagrams) |
 | View with no includes | View declared with no include filter (nothing visible; empty diagram) |
+| View without rendered diagram | View declaration has no companion mermaid block in the surrounding markdown (the projection is declared but not rendered; violates the inline diagram convention) |
+| Topology without rendered diagram | Topology declaration has no companion mermaid block (dependency structure is declared but not visualized) |
 | Dynamic with no steps | Dynamic declaration with no steps (scenario is empty) |
+| Dynamic without rendered diagram | Dynamic declaration has no companion mermaid sequence diagram (interaction sequence is declared but not visualized) |
 | Dynamic step gap | Dynamic steps have non-contiguous sequence numbers (possible missing interaction) |
 | Unreferenced dynamic participant | Person or external system declared and appears in relationships but never in a dynamic step (static connections exist but no scenario exercises them) |
 

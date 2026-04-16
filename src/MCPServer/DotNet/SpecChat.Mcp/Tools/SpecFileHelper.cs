@@ -48,6 +48,40 @@ internal static class SpecFileHelper
     }
 
     /// <summary>
+    /// Parse a .spec.md file and also return the extracted spec and mermaid blocks,
+    /// for quality checks that need markdown-level context (e.g., diagram companion checks).
+    /// </summary>
+    public static (SpecDocument Document, DiagnosticBag Diagnostics,
+                    List<SpecBlock> SpecBlocks, List<MermaidBlock> MermaidBlocks)
+        ParseFileWithBlocks(string filePath)
+    {
+        var diagnostics = new DiagnosticBag();
+        string content = File.ReadAllText(filePath);
+
+        var extractor = new SpecBlockExtractor();
+        var specBlocks = extractor.Extract(content, filePath, diagnostics);
+        var mermaidBlocks = extractor.ExtractMermaidBlocks(content, filePath);
+
+        var allDeclarations = new List<TopLevelDecl>();
+
+        foreach (var block in specBlocks)
+        {
+            int baseLineOffset = block.StartLine;
+            var lexer = new Lexer(block.Content, filePath, baseLineOffset, diagnostics);
+            var tokens = lexer.Tokenize();
+
+            var parser = new Parser(tokens, filePath, diagnostics);
+            var doc = parser.Parse();
+
+            allDeclarations.AddRange(doc.Declarations);
+        }
+
+        var location = new SourceLocation(filePath, 1, 1, 0);
+        var document = new SpecDocument(allDeclarations, location);
+        return (document, diagnostics, specBlocks, mermaidBlocks);
+    }
+
+    /// <summary>
     /// Serialize diagnostics to a JSON-friendly list of objects.
     /// </summary>
     public static List<Dictionary<string, object>> SerializeDiagnostics(DiagnosticBag diagnostics)
