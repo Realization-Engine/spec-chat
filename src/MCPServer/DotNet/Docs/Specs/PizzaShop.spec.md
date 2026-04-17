@@ -10,7 +10,7 @@
 | Approved | |
 | Executed | |
 | Verified | |
-| Dependencies | None (base system specification) |
+| Dependencies | PayGate.spec.md, SendGate.spec.md (test harness subsystems) |
 
 This specification describes an online pizza ordering system built with ASP.NET 10.
 Customers browse a menu, customize pizzas, and place orders through a Blazor
@@ -19,6 +19,11 @@ processes payments through Stripe, and sends confirmation emails via SendGrid.
 Data is stored in PostgreSQL using Entity Framework Core.
 
 An admin interface provides order management and sales analytics.
+
+In dev and test environments, two companion test harness subsystems (PayGate
+and SendGate) stand in for Stripe and SendGrid respectively, allowing
+integration validation without hitting production APIs. See
+PayGate.spec.md and SendGate.spec.md for their full specifications.
 
 ## Context
 
@@ -54,6 +59,28 @@ external system SendGrid {
                its own SMTP infrastructure.";
 }
 
+external system PayGate {
+    description: "Test harness that mimics the Stripe REST API surface.
+                  Used in dev and test environments so integration tests
+                  can validate payment flows without hitting Stripe.
+                  Supports stub, record, replay, and fault injection modes.";
+    technology: "REST/HTTPS";
+    @tag("payment", "test-harness");
+    rationale "PayGate provides a controlled, deterministic payment
+               endpoint for integration testing. See PayGate.spec.md.";
+}
+
+external system SendGate {
+    description: "Test harness that mimics the SendGrid REST API surface.
+                  Captures emails in an in-memory inbox for test assertion.
+                  Used in dev and test environments to validate email flows
+                  without delivering real messages.";
+    technology: "REST/HTTPS";
+    @tag("notification", "test-harness");
+    rationale "SendGate provides inbox inspection so tests can assert
+               email content and recipients. See SendGate.spec.md.";
+}
+
 Customer -> PizzaShop : "Browses menu, builds pizzas, places and tracks orders.";
 
 Admin -> PizzaShop : "Manages menu items, views incoming orders, reviews analytics.";
@@ -61,11 +88,27 @@ Admin -> PizzaShop : "Manages menu items, views incoming orders, reviews analyti
 PizzaShop -> Stripe {
     description: "Submits payment intents and processes refunds.";
     technology: "REST/HTTPS";
+    @tag("production");
 }
 
 PizzaShop -> SendGrid {
     description: "Sends order confirmation and status update emails.";
     technology: "REST/HTTPS";
+    @tag("production");
+}
+
+PizzaShop -> PayGate {
+    description: "Submits payment intents and processes refunds
+                  in dev/test environments.";
+    technology: "REST/HTTPS";
+    @tag("test-harness");
+}
+
+PizzaShop -> SendGate {
+    description: "Sends emails in dev/test environments. SendGate
+                  captures them for inbox inspection.";
+    technology: "REST/HTTPS";
+    @tag("test-harness");
 }
 ```
 
@@ -82,11 +125,15 @@ C4Context
 
     System_Ext(stripe, "Stripe", "Payment processing")
     System_Ext(sendgrid, "SendGrid", "Transactional email delivery")
+    System_Ext(paygate, "PayGate", "Payment test harness (dev/test)")
+    System_Ext(sendgate, "SendGate", "Email test harness (dev/test)")
 
     Rel(customer, pizzashop, "Browses menu, places orders")
     Rel(admin, pizzashop, "Manages menu, views orders")
-    Rel(pizzashop, stripe, "Submits payments", "REST/HTTPS")
-    Rel(pizzashop, sendgrid, "Sends emails", "REST/HTTPS")
+    Rel(pizzashop, stripe, "Submits payments (prod)", "REST/HTTPS")
+    Rel(pizzashop, sendgrid, "Sends emails (prod)", "REST/HTTPS")
+    Rel(pizzashop, paygate, "Submits payments (dev/test)", "REST/HTTPS")
+    Rel(pizzashop, sendgate, "Sends emails (dev/test)", "REST/HTTPS")
 ```
 
 ## System Declaration
@@ -558,6 +605,7 @@ flowchart LR
     classDef authored fill:#438DD5,stroke:#2E6295,color:#fff
     classDef tests fill:#85BBF0,stroke:#5D99CF,color:#000
     classDef external fill:#999999,stroke:#6B6B6B,color:#fff
+    classDef harness fill:#F5A623,stroke:#D4891C,color:#fff
 
     Api["PizzaShop.Api<br/><i>api-host</i>"]:::authored
     Client["PizzaShop.Client<br/><i>blazor-wasm-host</i>"]:::authored
@@ -568,14 +616,18 @@ flowchart LR
     CTests["PizzaShop.Client.Tests<br/><i>tests</i>"]:::tests
     Stripe["Stripe"]:::external
     SendGrid["SendGrid"]:::external
+    PayGate["PayGate<br/><i>test harness</i>"]:::harness
+    SendGate["SendGate<br/><i>test harness</i>"]:::harness
 
     Api --> Domain
     Api --> Infra
     Api --> Shared
     Client --> Shared
     Infra --> Domain
-    Infra -->|"REST/HTTPS"| Stripe
-    Infra -->|"REST/HTTPS"| SendGrid
+    Infra -->|"REST/HTTPS (prod)"| Stripe
+    Infra -->|"REST/HTTPS (prod)"| SendGrid
+    Infra -.->|"REST/HTTPS (dev/test)"| PayGate
+    Infra -.->|"REST/HTTPS (dev/test)"| SendGate
     DTests --> Domain
     CTests --> Client
     CTests --> Shared
@@ -586,11 +638,11 @@ flowchart LR
     Client -..->|"DENIED"| Infra
     Shared -..->|"DENIED"| Domain
 
-    linkStyle 10 stroke:#FF0000,stroke-dasharray:5
-    linkStyle 11 stroke:#FF0000,stroke-dasharray:5
     linkStyle 12 stroke:#FF0000,stroke-dasharray:5
     linkStyle 13 stroke:#FF0000,stroke-dasharray:5
     linkStyle 14 stroke:#FF0000,stroke-dasharray:5
+    linkStyle 15 stroke:#FF0000,stroke-dasharray:5
+    linkStyle 16 stroke:#FF0000,stroke-dasharray:5
 ```
 
 ## Phases
@@ -935,11 +987,33 @@ deployment Development {
             instance: postgresql;
             @tag("infrastructure");
         }
+
+        node "PayGate Container" {
+            technology: ".NET 10, ASP.NET Minimal API";
+            instance: PayGate;
+            @tag("test-harness");
+        }
+
+        node "SendGate Container" {
+            technology: ".NET 10, ASP.NET Minimal API";
+            instance: SendGate;
+            @tag("test-harness");
+        }
     }
 
-    rationale "Development uses Docker Compose to provision PostgreSQL
-               alongside the .NET projects. The API and client run via
-               dotnet watch for hot reload.";
+    rationale {
+        context "Development uses Docker Compose to provision infrastructure
+                 alongside the .NET projects. The API and client run via
+                 dotnet watch for hot reload.";
+        decision "PayGate and SendGate run as sidecar containers in the
+                  Docker Compose stack. PizzaShop.Infrastructure reads
+                  the payment and email base URLs from configuration,
+                  pointing to the gate containers instead of the
+                  production Stripe and SendGrid endpoints.";
+        consequence "Integration tests run locally against deterministic
+                     test doubles. No Stripe or SendGrid credentials are
+                     needed for development.";
+    }
 }
 
 deployment Production {
@@ -1021,6 +1095,15 @@ view deployment of Production ProductionDeploymentView {
                   Service, static web assets, and managed PostgreSQL.";
     @tag("ops");
 }
+
+view deployment of Development DevelopmentDeploymentView {
+    include: all;
+    autoLayout: top-down;
+    description: "Development environment with Docker Compose including
+                  PayGate and SendGate test harness containers alongside
+                  PostgreSQL.";
+    @tag("dev", "test-harness");
+}
 ```
 
 Rendered system landscape:
@@ -1036,11 +1119,15 @@ C4Context
 
     System_Ext(stripe, "Stripe", "Payment processing")
     System_Ext(sendgrid, "SendGrid", "Transactional email delivery")
+    System_Ext(paygate, "PayGate", "Payment test harness (dev/test)")
+    System_Ext(sendgate, "SendGate", "Email test harness (dev/test)")
 
     Rel(customer, pizzashop, "Browses menu, places orders")
     Rel(admin, pizzashop, "Manages menu, views orders")
-    Rel(pizzashop, stripe, "Submits payments", "REST/HTTPS")
-    Rel(pizzashop, sendgrid, "Sends emails", "REST/HTTPS")
+    Rel(pizzashop, stripe, "Submits payments (prod)", "REST/HTTPS")
+    Rel(pizzashop, sendgrid, "Sends emails (prod)", "REST/HTTPS")
+    Rel(pizzashop, paygate, "Submits payments (dev/test)", "REST/HTTPS")
+    Rel(pizzashop, sendgate, "Sends emails (dev/test)", "REST/HTTPS")
 ```
 
 Rendered container view:
@@ -1050,6 +1137,7 @@ flowchart LR
     classDef authored fill:#438DD5,stroke:#2E6295,color:#fff
     classDef consumed fill:#999999,stroke:#6B6B6B,color:#fff
     classDef tests fill:#85BBF0,stroke:#5D99CF,color:#000
+    classDef harness fill:#F5A623,stroke:#D4891C,color:#fff
 
     subgraph PizzaShop["PizzaShop"]
         Api["PizzaShop.Api<br/><i>api-host</i>"]:::authored
@@ -1070,9 +1158,14 @@ flowchart LR
         PG["postgresql<br/><i>container</i>"]:::consumed
     end
 
-    subgraph ExtSvc["External Services"]
+    subgraph ExtSvc["External Services (prod)"]
         Stripe["Stripe"]:::consumed
         SendGrid["SendGrid"]:::consumed
+    end
+
+    subgraph TestSvc["Test Harnesses (dev/test)"]
+        PayGate["PayGate"]:::harness
+        SendGate["SendGate"]:::harness
     end
 
     Api --> Domain
@@ -1084,8 +1177,10 @@ flowchart LR
     Infra --> EF
     Infra --> Npgsql
     Infra --> PG
-    Infra -->|"REST/HTTPS"| Stripe
-    Infra -->|"REST/HTTPS"| SendGrid
+    Infra -->|"REST/HTTPS (prod)"| Stripe
+    Infra -->|"REST/HTTPS (prod)"| SendGrid
+    Infra -.->|"REST/HTTPS (dev/test)"| PayGate
+    Infra -.->|"REST/HTTPS (dev/test)"| SendGate
     DTests --> Domain
     DTests --> XUnit
     CTests --> Client
@@ -1099,6 +1194,7 @@ Rendered customer-facing view (excludes admin-only elements):
 flowchart LR
     classDef authored fill:#438DD5,stroke:#2E6295,color:#fff
     classDef external fill:#999999,stroke:#6B6B6B,color:#fff
+    classDef harness fill:#F5A623,stroke:#D4891C,color:#fff
 
     Client["PizzaShop.Client<br/><i>blazor-wasm-host</i>"]:::authored
     Shared["PizzaShop.Shared<br/><i>library</i>"]:::authored
@@ -1107,14 +1203,18 @@ flowchart LR
     Infra["PizzaShop.Infrastructure<br/><i>library</i>"]:::authored
     Stripe["Stripe"]:::external
     SendGrid["SendGrid"]:::external
+    PayGate["PayGate"]:::harness
+    SendGate["SendGate"]:::harness
 
     Client --> Shared
     Api --> Shared
     Api --> Domain
     Api --> Infra
     Infra --> Domain
-    Infra -->|"REST/HTTPS"| Stripe
-    Infra -->|"REST/HTTPS"| SendGrid
+    Infra -->|"REST/HTTPS (prod)"| Stripe
+    Infra -->|"REST/HTTPS (prod)"| SendGrid
+    Infra -.->|"REST/HTTPS (dev/test)"| PayGate
+    Infra -.->|"REST/HTTPS (dev/test)"| SendGate
 ```
 
 Rendered API component view:
@@ -1158,6 +1258,31 @@ C4Deployment
         }
         Deployment_Node(pgdb, "Azure Database for PostgreSQL", "Flexible Server D2ds_v5") {
             ContainerDb(pg, "postgresql", "PostgreSQL 17", "Relational storage")
+        }
+    }
+```
+
+Rendered development deployment:
+
+```mermaid
+C4Deployment
+    title Deployment: PizzaShop (Development)
+
+    Deployment_Node(workstation, "Developer Workstation", "Docker Desktop") {
+        Deployment_Node(apinode, "API Container", ".NET 10 SDK") {
+            Container(api, "PizzaShop.Api", ".NET 10", "Web API host")
+        }
+        Deployment_Node(clientnode, "Blazor Dev Server", "Blazor WebAssembly") {
+            Container(client, "PizzaShop.Client", "Blazor WASM", "Frontend SPA")
+        }
+        Deployment_Node(pgnode, "PostgreSQL Container", "PostgreSQL 17") {
+            ContainerDb(pg, "postgresql", "PostgreSQL 17", "Relational storage")
+        }
+        Deployment_Node(paynode, "PayGate Container", ".NET 10 Minimal API") {
+            Container(paygate, "PayGate", ".NET 10", "Payment test harness")
+        }
+        Deployment_Node(sendnode, "SendGate Container", ".NET 10 Minimal API") {
+            Container(sendgate, "SendGate", ".NET 10", "Email test harness")
         }
     }
 ```
@@ -1438,4 +1563,8 @@ visualization RevenueBreakdownChart {
 
 ## Open Items
 
-None at this time.
+- PizzaShop.Infrastructure integration tests should add a phase gate that
+  requires PayGate and SendGate containers to be running. This gate belongs
+  in the Integration phase once the gate specs reach Executed state.
+- Docker Compose file for the Development deployment should be authored to
+  include PayGate and SendGate as sidecar services alongside PostgreSQL.
