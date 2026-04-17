@@ -79,7 +79,11 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(cp \"Delivery/spec-chat/samples/blazor-harness.spec.md\" \"tests/fixtures/blazor-harness.spec.md\")",
       "Bash(wc -l /e/Archive/GitHub/dlandi/spec-chat/src/MCPServer/DotNet/SpecChat.Language.Tests/*.cs)",
-      "mcp__spec-chat__list_constructs"
+      "mcp__spec-chat__list_constructs",
+      "WebFetch(domain:iasa-global.github.io)",
+      "WebFetch(domain:education.iasaglobal.org)",
+      "WebFetch(domain:www.architectureandgovernance.com)",
+      "WebFetch(domain:medium.com)"
     ]
   }
 }
