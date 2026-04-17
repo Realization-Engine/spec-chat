@@ -59,7 +59,7 @@ Only the Engagement Model produces concepts that are structural, reusable across
 
 ## Governing Principles
 
-Six principles govern how Engagement Model concepts enter SpecChat.
+Seven principles govern how Engagement Model concepts enter SpecChat.
 
 ### 1. Governed, Not Governing
 
@@ -102,6 +102,12 @@ This keeps the core language stable for users who do not need BTABOK alignment.
 
 The BTABOK profile adopts CoDL (Concept Definition Language) as the canonical schema language for concept records and CaDL (Canvas Definition Language) as the canonical language for canvas projections. The profile does not invent parallel constructs for concepts or canvases. Where SpecLang-style short forms are offered, they exist only as optional ergonomic aliases that desugar to CoDL records. See Section 11 for the full alignment and [CoDL-CaDL-Integration-Notes.md](CoDL-CaDL-Integration-Notes.md) for source material and detailed mapping.
 
+### 7. Core Absorption Precedes Profile Scope
+
+Elements that meet three criteria, universal applicability, worldview neutrality, and low incremental cost, move into Core SpecLang rather than remaining in the BTABOK profile. Universal infrastructure concerns (stable identifiers, standard metadata, cross-document references, retention policy, relationship declarations, diagnostic framework) belong in core because every spec collection needs them. Practice-specific concerns (governance bodies, ASRs with significance classification, stakeholders with influence grids, capability maturity, roadmap transitions, principles, waivers) remain profile-scoped because they encode a specific architecture-practice worldview.
+
+This principle is the formal basis for the Option X absorption decision. See [Core-SpecLang-Absorption-Design.md](Core-SpecLang-Absorption-Design.md) for the full criterion, the list of absorbed elements, and the elements that remain profile-scoped.
+
 ---
 
 ## Engagement Model Concept Map
@@ -109,11 +115,12 @@ The BTABOK profile adopts CoDL (Concept Definition Language) as the canonical sc
 The table below maps every Engagement Model operating-model concept to SpecChat. Each concept is classified by integration layer and current status.
 
 **Integration layers:**
-- **Core**: Already present in core SpecLang
-- **Manifest**: Expressible through manifest metadata with minimal additions
-- **Type Profile**: Requires a spec type from the taxonomy with a validation profile
-- **DSL Extension**: Requires new formal syntax in a BTABOK profile extension
+- **Core**: Already present in core SpecLang, including the infrastructure absorbed under the Option X decision (standard metadata, slug, reference types, relationship declarations with cardinality, retention policy, diagnostic code/validator/suggestion fields, ten core validators)
+- **Manifest**: Expressible through manifest metadata with minimal additions beyond the core metadata profile
+- **Profile**: Requires a BTABOK-profile concept type or profile-specific metadata extension (replaces the former "Type Profile" and "DSL Extension" distinctions for profile-scoped concepts)
 - **Out of Scope**: Not suitable for specification-language expression, even within the Engagement Model
+
+Rows previously classified as "Type Profile" or "DSL Extension" are relabeled "Profile" when the concept is BTABOK-specific, or "Core" when the underlying construct (slug, metadata, references, retention, relationships) is now core infrastructure.
 
 **Status values:**
 - **Exists**: Fully present in the current SpecChat corpus
@@ -124,40 +131,40 @@ The table below maps every Engagement Model operating-model concept to SpecChat.
 | EM Concept | BTABOK Definition | SpecChat Construct | Layer | Status |
 |---|---|---|---|---|
 | **Architecture Lifecycle** | Six-stage ADLC: Innovation, Strategy, Planning, Transformation, Utilize/Measure, Decommissioning | Manifest lifecycle states (Draft, Reviewed, Approved, Executed, Verified) map to Planning through Utilize/Measure. Innovation and Strategy stages are pre-spec. Decommissioning is post-spec. | Manifest | Latent |
-| **Decisions** | Architecturally significant decisions with scope, type, method, reversibility, cascades, and stakeholder impact | Decision Spec document type with structured rationale, options, recommendation, amendments. Traces link decisions to requirements. | Type Profile + DSL Extension | Latent |
-| **Decision scope** | Six levels: ecosystem, enterprise, value stream, solution, product/service, module | Not currently classified. Decision specs exist but do not declare scope. | DSL Extension | Gap |
-| **Decision type** | Structural, product/framework, constraint, cascade, principle | Not currently classified. | DSL Extension | Gap |
+| **Decisions** | Architecturally significant decisions with scope, type, method, reversibility, cascades, and stakeholder impact | Decision Spec document type with structured rationale, options, recommendation, amendments. Traces link decisions to requirements. | Profile | Latent |
+| **Decision scope** | Six levels: ecosystem, enterprise, value stream, solution, product/service, module | Not currently classified. Decision specs exist but do not declare scope. | Profile | Gap |
+| **Decision type** | Structural, product/framework, constraint, cascade, principle | Not currently classified. | Profile | Gap |
 | **Decision method** | Budgeted evaluation, bake-off, cost-benefit analysis, scoring, opinion | Not currently modeled. Belongs in prose sections of decision specs, not in formal syntax. | Out of Scope | Gap |
-| **Decision cascades** | One decision triggering dependent decisions requiring independent tradeoff analysis | Manifest dependency fields link specs. Cross-document cascade chains are not formalized. | Manifest | Latent |
-| **Decision records (ADR)** | Traceable decision with context, options, consequences, approver, status | Decision Spec already carries this substance. Needs standardized fields for approver and status. | Type Profile | Latent |
+| **Decision cascades** | One decision triggering dependent decisions requiring independent tradeoff analysis | Core relationship declarations with cardinality plus `ref<DecisionRecord>` and manifest `dependencies` link specs. Cross-document cascade chains are expressed as typed relationships. | Core | Latent |
+| **Decision records (ADR)** | Traceable decision with context, options, consequences, approver, status | Core SpecItem metadata provides `authors`, `reviewers`, `committer`, and `publishStatus`. The BTABOK DecisionRecord concept adds scope/type/method fields on top of that core metadata. | Core + Profile | Latent |
 | **Design** | Technical design for software implementation; component composition, patterns, interactions | Core SpecLang systems register: authored/consumed components, topology, contracts, constraints, platform realization. | Core | Exists |
 | **Patterns** | Reusable design solutions; reference models, architectural styles | Topology rules, layer contracts (via The Standard), constraints. No pattern catalog artifact. | Core | Latent |
-| **Stakeholders** | Identify stakeholders, their concerns, influence, and engagement strategy | Context register: `person`, `external system`, `relationship`, `@tag`. Concerns and influence metadata are absent. | Core + Type Profile | Latent |
-| **Stakeholder concerns** | Specific interests driving viewpoint selection and architecture communication | Not formalized. Persons exist but do not carry concern declarations. | DSL Extension | Gap |
+| **Stakeholders** | Identify stakeholders, their concerns, influence, and engagement strategy | Context register: `person`, `external system`, `relationship`, `@tag`. Concerns and influence metadata are absent. | Core + Profile | Latent |
+| **Stakeholder concerns** | Specific interests driving viewpoint selection and architecture communication | Not formalized. Persons exist but do not carry concern declarations. | Profile | Gap |
 | **Stakeholder influence** | Power/interest mapping, engagement strategy | Not representable as spec constructs. Organizational concern. | Out of Scope | Gap |
-| **Requirements** | Three types: functional, quality attribute, constraint. ASR classification by significance. | Contracts (functional), constraints (constraint-type), invariants. No explicit ASR classification or significance scoring. | Core + Type Profile | Latent |
-| **ASR classification** | Structural impact, quality attribute impact, technical capability impact, political/stakeholder impact, incremental innovation | Not formalized. Requirements exist but are not classified by architectural significance. | DSL Extension | Gap |
-| **ASR characteristics** | Complete, traceable, current, verifiable, valuable | Traces provide traceability. Contracts provide verifiability. Completeness, currency, and value are not checked. | Type Profile | Latent |
+| **Requirements** | Three types: functional, quality attribute, constraint. ASR classification by significance. | Contracts (functional), constraints (constraint-type), invariants. No explicit ASR classification or significance scoring. | Core + Profile | Latent |
+| **ASR classification** | Structural impact, quality attribute impact, technical capability impact, political/stakeholder impact, incremental innovation | Not formalized. Requirements exist but are not classified by architectural significance. | Profile | Gap |
+| **ASR characteristics** | Complete, traceable, current, verifiable, valuable | Core reference resolution and relationship cardinality checks handle traceability; core freshness SLA checks handle currency; contracts provide verifiability. Completeness and value remain profile-level judgments. | Core | Latent |
 | **Views** | Representation of architecture aspects addressing stakeholder concerns | `view` declarations with Mermaid renderings, model-vs-views separation. | Core | Exists |
-| **Viewpoints** | Reusable templates defining audience, concerns, models, and principles for constructing views | Not formalized as reusable templates. Views exist at instance level. Viewpoint is treated as a classification axis (see Governing Principles). | Type Profile | Gap |
+| **Viewpoints** | Reusable templates defining audience, concerns, models, and principles for constructing views | Not formalized as reusable templates. Views exist at instance level. Viewpoint is treated as a classification axis (see Governing Principles). | Profile | Gap |
 | **Viewpoint types** | Strategic, Landscape, Context, Process, Application, Physical, Logical/Information | Context register maps to Context viewpoint. Deployment register maps to Physical viewpoint. Systems register maps to Application viewpoint. Dynamic declarations map to Process viewpoint. No Strategic or Landscape viewpoint. | Core | Latent |
-| **Quality Attributes** | Cross-cutting qualities needing explicit planning, scenarios, and measurement | Contracts, constraints, topology prohibitions, phase gates. No dedicated quality-attribute scenario artifact. | Core + Type Profile | Latent |
-| **Quality attribute scenarios** | Stimulus, response, threshold, verification obligation | Not formalized as structured scenarios. Constraints carry some of this substance implicitly. | DSL Extension | Gap |
-| **Deliverables** | Seven types: documents, collaboration, models, advisory, tools, decisions, influence | Specs and manifests are the document deliverables. Projections are model deliverables. Other types (collaboration, advisory, influence) are not spec artifacts. | Core + Manifest | Latent |
-| **Deliverable ownership** | Named owner, usage tracking, freshness SLA | No owner field in specs or manifests. No freshness tracking. | Manifest | Gap |
+| **Quality Attributes** | Cross-cutting qualities needing explicit planning, scenarios, and measurement | Contracts, constraints, topology prohibitions, phase gates. No dedicated quality-attribute scenario artifact. | Core + Profile | Latent |
+| **Quality attribute scenarios** | Stimulus, response, threshold, verification obligation | Not formalized as structured scenarios. Constraints carry some of this substance implicitly. | Profile | Gap |
+| **Deliverables** | Seven types: documents, collaboration, models, advisory, tools, decisions, influence | Specs and manifests are the document deliverables. Projections are model deliverables. Other types (collaboration, advisory, influence) are not spec artifacts. | Core | Latent |
+| **Deliverable ownership** | Named owner, usage tracking, freshness SLA | Core SpecItem metadata carries `authors`, `reviewers`, and `committer`. Freshness tracking is core via `retentionPolicy`, `freshnessSla`, and `lastReviewed`. | Core | Planned |
 | **Deliverable usage** | Unused deliverables should be archived and deleted | No usage telemetry. No archival mechanism. | Out of Scope | Gap |
-| **Repository** | Evergreen store of critical artifacts for architect decision-making and communication | Spec collection + manifest + projections. Repository operating rules (freshness, ownership, query/report) are absent. | Manifest | Latent |
-| **Repository ever-green** | Artifacts the team commits to keeping current; everything else archived | Not formalized. See Governing Principle 4. | Manifest | Gap |
+| **Repository** | Evergreen store of critical artifacts for architect decision-making and communication | Spec collection + manifest + projections. Core reference resolution plus core retention policy and freshness checks supply the repository operating rules. | Core | Latent |
+| **Repository ever-green** | Artifacts the team commits to keeping current; everything else archived | Expressed by core `retentionPolicy: indefinite` plus `freshnessSla` and `lastReviewed`, enforced by the core `check_freshness_sla` validator. See Governing Principle 4 and Core-SpecLang-Absorption-Design.md. | Core | Planned |
 | **Architecture Tools** | Tools supporting lifecycle, traceability, collaboration, APIs, and reporting | CLI, projections, semantic analysis, guided authoring. Enterprise tool ecosystem integration is not specified. | Core | Latent |
 | **Tool integration** | Connectors to issue trackers, CI, source control, architecture dashboards | Not specified. | Out of Scope | Gap |
 | **Quality Assurance** | Verification and validation processes ensuring architecture meets requirements | Spec verification flow: contracts checked against source, tests declared in spec, lifecycle state moves to Verified. | Core + Manifest | Exists |
-| **Governance** | Framework of processes and decision-making structure; review authority, compliance, waivers | Manifest lifecycle states imply review/approval. No formal governance body, approval authority, or waiver mechanism. | Type Profile | Latent |
+| **Governance** | Framework of processes and decision-making structure; review authority, compliance, waivers | Manifest lifecycle states imply review/approval. Formal governance bodies, approval authority, and waivers are profile concepts. | Profile | Latent |
 | **Governance boards (ARB)** | Named review body with authority to approve, reject, or waive | Not modeled. | Out of Scope | Gap |
-| **Governance waivers** | Controlled deviation from standards with tracked risk and expiration | Not modeled. Waiver Spec is proposed in taxonomy. | Type Profile | Planned |
+| **Governance waivers** | Controlled deviation from standards with tracked risk and expiration | BTABOK `WaiverRecord` concept. Uses core infrastructure (slug, metadata, references) underneath. | Profile | Planned |
 | **Governance bottom-up** | Governance during design and delivery, not post-hoc inspection | SpecChat's design-time validation (contracts, constraints, topology) is inherently bottom-up. | Core | Exists |
 | **Product and Project** | Architecture integrated with product/project delivery | Phases, execution tiers, dependency ordering, verification gates. | Core + Manifest | Exists |
-| **Roadmap** | Baseline, target, transitions, dependencies, sequencing, milestones | Phases and manifest execution order cover delivery sequencing. No business roadmap or transition-architecture artifact. | Core + Type Profile | Latent |
-| **Roadmap transitions** | Explicit baseline-to-target transition plans | Not formalized. Phases describe build order, not architectural transitions. | Type Profile | Gap |
+| **Roadmap** | Baseline, target, transitions, dependencies, sequencing, milestones | Phases and manifest execution order cover delivery sequencing. BTABOK `RoadmapItem` and `TransitionArchitecture` add business roadmap and transition artifacts. | Core + Profile | Latent |
+| **Roadmap transitions** | Explicit baseline-to-target transition plans | BTABOK `TransitionArchitecture` concept. Phases describe build order, not architectural transitions. | Profile | Gap |
 | **Services** | Architecture services delivered to the organization | Not a spec-language concern. Organizational operating model. | Out of Scope | Gap |
 | **Assignment** | How architects are assigned to work | Organizational. Not a spec-language concern. | Out of Scope | Gap |
 | **Legacy Modernization** | Assessment and migration of legacy systems | Not a spec-language concern at the construct level. A legacy system can be modeled as an `external system` in context. | Core | Latent |
@@ -171,6 +178,18 @@ The table below maps every Engagement Model operating-model concept to SpecChat.
 
 These Engagement Model concepts are already carried by core SpecLang constructs with no changes needed.
 
+As of the Option X decision (see [Core-SpecLang-Absorption-Design.md](Core-SpecLang-Absorption-Design.md)), the Core SpecLang feature set has grown to include the following infrastructure that was previously scoped to the BTABOK profile:
+
+- Standard metadata profile (`slug`, `itemType`, `name`, `version`, `publishStatus`, `authors`, `reviewers`, `committer`, `tags`, `createdAt`, `updatedAt`, `retentionPolicy`, `freshnessSla`, `lastReviewed`, `dependencies`)
+- Reference types: `ref<T>`, `weakRef`, `externalRef`
+- Relationship declarations with cardinality (`uses`, `implements`, `supersedes`, `supersededBy`, plus `cardinality(<range>)`)
+- Retention policy enum (`indefinite`, `archive-on-deprecated`, `delete-on-superseded`)
+- Diagnostic code, validator, and suggestion fields
+- Slug uniqueness and format enforcement
+- Ten core validators (metadata completeness, slug uniqueness, slug format, reference resolution, weakRef resolution, externalRef validity, freshness SLA, profile composition, relationship cardinality, supersedes cycles)
+
+The following Engagement Model concepts are addressed directly by core SpecLang:
+
 **Design.** The systems register (authored/consumed components, topology, contracts, constraints, platform realization) directly implements BTABOK's design concept. Component composition, dependency rules, and structural patterns are first-class.
 
 **Views.** The `view` declaration with mandatory Mermaid renderings, model-vs-views separation, and multi-zoom-level support corresponds to BTABOK's view concept and aligns with ISO 42010.
@@ -183,22 +202,23 @@ These Engagement Model concepts are already carried by core SpecLang constructs 
 
 **Product and Project delivery.** Phases with validation gates, execution tiers with dependency ordering, and verification flow implement the delivery-lifecycle integration BTABOK expects.
 
+**Deliverable ownership.** Core SpecItem metadata carries `authors`, `reviewers`, and `committer`. Every spec has a named responsible party without profile activation.
+
+**Repository ever-green and freshness.** Core `retentionPolicy` (`indefinite`, `archive-on-deprecated`, `delete-on-superseded`) plus `freshnessSla` and `lastReviewed` express the ever-green distinction. The core `check_freshness_sla` validator enforces it.
+
+**Decision cascades (infrastructure).** Core relationship declarations with cardinality and `ref<T>` provide the mechanism for linking a decision to its cascaded decisions. The BTABOK DecisionRecord concept consumes this core mechanism rather than defining its own.
+
+**ASR characteristics (traceability and currency).** Core reference resolution and freshness SLA checks cover the traceable and current characteristics. Verifiable is covered by contracts. Complete and valuable remain profile-level judgments.
+
 ### Expressible Through Manifest/Type System
 
-These concepts can be addressed through manifest metadata additions and type-system formalization, without grammar changes.
+These concepts can be addressed through manifest metadata additions and type-system formalization, without grammar changes. After Option X, most of this category is already covered by the absorbed core metadata and validators; the items remaining here are the manifest-level sequencing and cascade-typing concerns that sit on top of the core infrastructure.
 
-**Architecture Lifecycle.** The current five-state lifecycle (Draft, Reviewed, Approved, Executed, Verified) maps to the middle stages of BTABOK's six-stage ADLC (Planning through Utilize/Measure). Two additions are needed:
-
-- An `ever-green` flag per spec in the manifest inventory, indicating whether the artifact requires continuous maintenance or is point-in-time.
-- A `freshness-sla` field for ever-green specs, specifying the maximum interval between reviews.
+**Architecture Lifecycle.** The current five-state lifecycle (Draft, Reviewed, Approved, Executed, Verified) maps to the middle stages of BTABOK's six-stage ADLC (Planning through Utilize/Measure). The ever-green distinction and freshness SLA are carried by core `retentionPolicy`, `freshnessSla`, and `lastReviewed`.
 
 Innovation and Strategy are pre-spec activities. Decommissioning is post-spec. These stages do not need spec-level representation.
 
-**Decision cascades.** The manifest's dependency field already links specs. Formalizing cascade chains requires only that the dependency field distinguish "execution dependency" (must complete first) from "decision cascade" (triggered by this decision). A `dependency-type` qualifier handles this.
-
-**Deliverable ownership.** Adding `owner` and `approver` fields to the manifest's spec inventory table gives every spec a named responsible party. This is the single most impactful metadata addition for BTABOK alignment.
-
-**Repository ever-green.** The `ever-green` flag described under Architecture Lifecycle gives the repository model its freshness concept. Validation can warn when an ever-green artifact's last-reviewed date exceeds its freshness SLA.
+**Decision cascade typing.** The dependency field can distinguish "execution dependency" (must complete first) from "decision cascade" (triggered by this decision) via a `dependency-type` qualifier. The linking mechanism itself is core (references plus relationship declarations).
 
 **Deliverables.** Specs and manifests are already document deliverables. Projections are model deliverables. Non-document deliverables (collaboration, advisory, influence) are organizational activities, not spec artifacts.
 
@@ -225,6 +245,8 @@ These concepts need spec types from the taxonomy, each with a validation profile
 ### Requires DSL Extension
 
 These concepts are formal, reusable, and semantically checkable across multiple documents. Rather than inventing new SpecLang grammar, the BTABOK profile expresses each as a **CoDL concept definition**. When the profile is active, CoDL syntax is available inside SpecLang documents (Option A, per [CoDL-CaDL-Integration-Notes.md](CoDL-CaDL-Integration-Notes.md)). Optional SpecLang-style short forms may be provided as ergonomic aliases that desugar to the same CoDL records, following The Standard extension's precedent.
+
+After Option X, only the BTABOK-specific concept fields appear in this list. The underlying infrastructure (the `meta` block fields, reference resolution, relationship declarations, slug rules, retention policy, and the diagnostic framework) is now core SpecLang and is not part of the DSL Extension scope. Items below retain the BTABOK-profile concept types they extend but rely on core infrastructure rather than reinventing it.
 
 **Decision scope and type.** Fields on the `DecisionRecord` CoDL concept using `enum(...)` types. These enable cross-document validation: does the decision's scope match the spec collection's scope? Do cascade references point to decisions at the correct scope level?
 
@@ -319,17 +341,17 @@ Per the Option A decision recorded in [CoDL-CaDL-Integration-Notes.md](CoDL-CaDL
 
 ### Metadata Additions
 
-When the BTABOK profile is active, every concept record adopts the **CoDL Standard BTABoK Metadata profile (`BTABoKItem`)** directly. Prior parallel metadata fields proposed by the WIP corpus (owner, approver, tracking-block version, informal reviewer field) are superseded by the CoDL fields. The Standard Metadata profile contributes:
+Under Option X, metadata is delivered in two layers.
 
-`slug`, `itemType`, `name`, `shortDescription`, `version`, `baseVersion`, `bokStatus` (Add/Update/Remove/Archive), `publishStatus` (Draft/Review/Approved/Published/Retired), `accessTier` (Free/Member/Paid/Restricted), `authors` (list<PersonRef>), `reviewers` (list<PersonRef>), `committer` (PersonRef), `tags`, `certainty` (score1to10), `createdAt`, `updatedAt`.
+**Core SpecItem metadata (every spec, every profile).** Core SpecLang provides the Core SpecItem metadata profile. It contributes:
 
-SpecChat adds one additive extension on top of CoDL's metadata to preserve the ever-green/freshness SLA concept from Governing Principle 4:
+`slug`, `itemType`, `name`, `shortDescription`, `version`, `publishStatus`, `authors` (list<PersonRef>), `reviewers` (list<PersonRef>), `committer` (PersonRef), `tags`, `createdAt`, `updatedAt`, `retentionPolicy` (`indefinite` | `archive-on-deprecated` | `delete-on-superseded`), `freshnessSla` (required on `indefinite`), `lastReviewed` (required on `indefinite`), `dependencies`.
 
-| SpecChat extension | Purpose | Type | CoDL interaction |
-|---|---|---|---|
-| `freshnessSla` | Maximum interval between reviews for `retentionPolicy: indefinite` records | `duration` | Additive field on records with `retentionPolicy: indefinite` |
+**BTABoKItem profile extensions (BTABOK-profile only).** When the BTABOK profile is active, the BTABOK profile extends the core metadata with BTABoK-specific fields: `accessTier` (Free/Member/Paid/Restricted), `bokStatus` (Add/Update/Remove/Archive), `certainty` (score1to10), `baseVersion`, `topicAreaId`, and related identifier fields (`publishedBokId`, `collectionId`, `documentId`, `baseDocumentId`, `referenceCollectionId`, `referenceDocumentId`, `commentThreadId`, `imageId`, `databaseId`, `tableId`).
 
-Ever-green semantics are otherwise carried by CoDL's `retentionPolicy` enum (`indefinite` | `archive-on-deprecated` | `delete-on-superseded`). The full mapping of WIP metadata fields to CoDL Standard Metadata is recorded in [CoDL-CaDL-Integration-Notes.md](CoDL-CaDL-Integration-Notes.md) Section 5.
+A BTABOK-profile spec carries both layers combined: the core fields contribute the universal metadata surface, and the BTABoKItem extensions contribute the fields specific to the BTABoK knowledge management context.
+
+Prior parallel metadata fields proposed by the WIP corpus (owner, approver, tracking-block version, informal reviewer field) are superseded by the core metadata. The full mapping of WIP metadata fields to core SpecItem and BTABoKItem extensions is recorded in [CoDL-CaDL-Integration-Notes.md](CoDL-CaDL-Integration-Notes.md) Section 5 and [Core-SpecLang-Absorption-Design.md](Core-SpecLang-Absorption-Design.md) Section 3.1.
 
 Concept-specific fields (decision scope and type, ASR significance, stakeholder concerns, viewpoint alignment) are expressed as typed sections on the corresponding CoDL concepts (`DecisionRecord`, `ASRCard`, `StakeholderCard`, `ViewpointCard`), not as parallel metadata. See the Requires DSL Extension subsection for the concept-level CoDL example.
 
@@ -463,6 +485,31 @@ Rationale, the Option A vs. Option B comparison, and worked examples appear in [
 
 CoDL is concept-type-neutral: any concept can in principle be defined in CoDL. The Engagement-Model-only scope that governs SpecChat's BTABOK integration must therefore be enforced at the **profile** level, not at the language level. The BTABOK profile defines concept types for Engagement Model concepts (ASRCard, DecisionRecord, StakeholderCard, ViewpointCard, CanvasDefinition, QualityAttributeScenario, WaiverRecord, RoadmapItem, TransitionArchitecture, GovernanceBody, GovernanceRule, RiskCard, PrincipleCard, CapabilityCard, StandardCard, LegacyModernizationRecord, ExperimentCard). Value Model and People Model concept types are out of scope for the SpecChat BTABOK profile; they may be introduced in separate profiles if demand emerges.
 
+Core absorption under Option X is itself a scope-discipline move. Universal infrastructure moves into Core SpecLang; practice-specific concepts stay in the profile. This aligns SpecChat with the "governed, not governing" principle because infrastructure discipline (stable IDs, ownership, freshness, reference integrity) now applies to every collection without requiring architecture-practice buy-in. Teams that do not adopt BTABOK still get the benefits of standard metadata, reference resolution, and retention tracking.
+
+### 11.5 Option X Absorption
+
+The Option X decision, recorded in [Core-SpecLang-Absorption-Design.md](Core-SpecLang-Absorption-Design.md), absorbs core infrastructure from CoDL into Core SpecLang.
+
+**Absorbed into Core SpecLang:**
+
+- Standard metadata profile (slug, itemType, name, version, publishStatus, authors, reviewers, committer, tags, createdAt, updatedAt, retentionPolicy, freshnessSla, lastReviewed, dependencies)
+- Reference types (`ref<T>`, `weakRef`, `externalRef`)
+- Relationship declarations with cardinality
+- Retention policy enum
+- Diagnostic record extensions (code, validator, suggestion)
+- Slug uniqueness and format rules
+- Ten core validators
+
+**Remains in the BTABOK profile:**
+
+- 16 concept types: GovernanceBody, GovernanceRule, WaiverRecord, StakeholderCard, CapabilityCard, RoadmapItem, TransitionArchitecture, StandardCard, RiskCard, ScorecardDefinition, MetricDefinition, PrincipleCard, ExperimentCard, ASRCard, DecisionRecord (full form with scope/type/method), ViewpointCard, CanvasDefinition, QualityAttributeScenario, LegacyModernizationRecord
+- BTABoKItem metadata extensions (accessTier, bokStatus, certainty, baseVersion, topicAreaId, and related profile-specific fields)
+- 13 BTABOK-specific validators
+- 20 CaDL canvases
+
+The BTABOK profile remains substantial, but it now relies on core infrastructure rather than reinventing it. Concept definitions still use `slug`, `ref<T>`, relationships, and the standard metadata profile, but those constructs are available to every SpecChat collection regardless of profile.
+
 ---
 
 ## Appendix A: Source References
@@ -523,3 +570,4 @@ CoDL is concept-type-neutral: any concept can in principle be defined in CoDL. T
 3. **Spec-Type-Taxonomy-v0.1.md** -- 14 spec types across 4 families.
 4. **Spec-Type-Validation-Analysis.md** -- Type Profile vs. DSL Extension distinction.
 5. **CoDL-CaDL-Integration-Notes.md** -- Alignment between SpecChat's BTABOK profile and the authoritative CoDL/CaDL specifications, including the Option A decision, Standard BTABoK Metadata mapping, retention policy alignment, and canvas projection examples.
+6. **Core-SpecLang-Absorption-Design.md** -- The Option X decision: the seven elements absorbed from the BTABOK profile into Core SpecLang (standard metadata, reference types, relationship declarations with cardinality, retention policy, diagnostic extensions, slug rules, ten core validators), the elements that remain in the BTABOK profile, the deferred (Option Y) items, and the ripple-effect updates required across the design corpus and codebase work.

@@ -130,6 +130,8 @@ These are the types most likely to justify first-class syntax.
 
 ### Decision Spec (CoDL concept: `DecisionRecord`)
 
+This type builds on Core SpecLang infrastructure. The metadata, reference types, and relationship declarations used in a Decision Spec come from Core SpecLang. Only the concept-specific fields listed below are BTABOK-profile extensions.
+
 CoDL concept fields:
 
 - option
@@ -141,6 +143,8 @@ CoDL concept fields:
 These are stable, repeatable semantics and map well to deterministic validation.
 
 ### ASR / Quality Spec (CoDL concept: `ASRCard`)
+
+This type builds on Core SpecLang infrastructure. Metadata, references, and relationships come from the core; only the concept-specific fields below are BTABOK-profile extensions.
 
 CoDL concept fields:
 
@@ -155,6 +159,8 @@ These are architecturally significant and naturally machine-checkable.
 
 ### Context / Stakeholder Spec (CoDL concept: `StakeholderCard`)
 
+This type builds on Core SpecLang infrastructure. Metadata, references, and relationships come from the core; only the concept-specific fields below are BTABOK-profile extensions.
+
 CoDL concept fields:
 
 - stakeholder
@@ -167,6 +173,8 @@ These are central to BTABOK-style architectural practice and likely deserve firs
 
 ### Governance / Waiver Spec (CoDL concepts: `GovernanceBody`, `WaiverRecord`)
 
+This type builds on Core SpecLang infrastructure. Metadata, references, and relationships come from the core; only the concept-specific fields below are BTABOK-profile extensions.
+
 CoDL concept fields:
 
 - rule
@@ -178,6 +186,8 @@ CoDL concept fields:
 These are formal governance elements, not just prose headings.
 
 ### Roadmap / Transition Spec (CoDL concepts: `RoadmapItem`, `TransitionArchitecture`)
+
+This type builds on Core SpecLang infrastructure. Metadata, references, and relationships come from the core; only the concept-specific fields below are BTABOK-profile extensions.
 
 CoDL concept fields:
 
@@ -251,6 +261,21 @@ Validate:
 
 Parse all embedded formal blocks with the shared core grammar and AST.
 
+This layer also runs the ten core validators absorbed under the Option X decision:
+
+- `check_metadata_completeness`
+- `check_slug_uniqueness`
+- `check_slug_format`
+- `check_reference_resolution`
+- `check_weakref_resolution`
+- `check_externalref_validity`
+- `check_freshness_sla`
+- `check_profile_composition`
+- `check_relationship_cardinality`
+- `check_supersedes_cycles`
+
+Layer 2 now does much more than parse formal blocks. It enforces core metadata completeness, slug format and uniqueness, reference resolution across `ref<T>`, `weakRef`, and `externalRef`, relationship cardinality, freshness SLAs, profile composition, and supersedes-cycle detection. These checks run on every collection regardless of profile.
+
 This preserves a single executable substrate.
 
 ### Layer 3: Type-Profile Validation
@@ -265,13 +290,13 @@ Apply spec-type rules such as:
 - required acceptance criteria
 - required verification clauses
 
-Under the BTABOK profile, type-profile validation rules are expressed as CoDL concept constraints: required and optional fields, cardinality declarations, and reference resolution through `ref<>`, `weakRef`, and `externalRef`.
+Under the BTABOK profile, Layer 3 handles the 13 BTABOK-specific validators that enforce concept-specific rules, including ASR traceability, decision scope and type, stakeholder coverage, viewpoint coverage, waiver expiration and rule reference, governance approval, roadmap capability moves, canvas target existence, and metric baseline/target presence. Layer 3 runs only when the relevant profile is active. Type-profile validation rules are expressed as CoDL concept constraints: required and optional fields, cardinality declarations, and reference resolution through `ref<>`, `weakRef`, and `externalRef` (the latter three provided by Core SpecLang).
 
 ### Layer 4: Extension Validation
 
-Only for types that justify richer semantics, parse and validate additional constructs introduced by a profile or extension.
+Layer 4 focuses on CaDL canvas completeness and other projection-specific checks. Canvas validation is profile-specific: under the BTABOK profile this layer checks that each CaDL canvas renders its underlying CoDL concept completely and that every canvas target exists. Other profiles can introduce their own projection checks here.
 
-That is the same general pattern already demonstrated by The Standard. For the BTABOK profile specifically, extension validation is CoDL concept validation, and projection validation is CaDL canvas completeness checking over the underlying CoDL concepts.
+That is the same general pattern already demonstrated by The Standard. For the BTABOK profile specifically, extension validation covers CaDL canvas completeness over the underlying CoDL concepts.
 
 ## The Decisive Point
 
@@ -322,18 +347,47 @@ This decision has three consequences for the rest of this analysis:
 
 Full alignment details, including the Standard Metadata mapping, lifecycle state mapping, reference model alignment, retention and freshness handling, and the scope discipline that keeps the BTABOK profile bounded to the Engagement Model, are recorded in [CoDL-CaDL-Integration-Notes.md](CoDL-CaDL-Integration-Notes.md).
 
+### Scope shift after the Option X decision
+
+As of the Option X decision, several validation concerns have moved from the DSL Extension candidates list into Core SpecLang. The following are now core, not BTABOK-profile specific:
+
+- Slug uniqueness and format
+- Reference resolution for `ref<T>`, `weakRef`, and `externalRef`
+- Metadata completeness against the Core SpecItem profile
+- Relationship cardinality
+- Freshness SLA
+
+Every spec collection gets these checks regardless of which profile is active.
+
+The remaining DSL Extension candidates are BTABOK-profile specific. They encode an architecture-practice worldview and activate only when the BTABOK profile is declared:
+
+- Decision scope, type, and method classification
+- ASR classification
+- Stakeholder concerns and coverage
+- Quality attribute scenarios
+- Viewpoint alignment
+- Waiver rules and expiration
+- Governance approval
+- Roadmap capability moves
+- Canvas target validation
+- Metric baseline and target
+
+For the authoritative record of what moved and what remained, see [Core-SpecLang-Absorption-Design.md](Core-SpecLang-Absorption-Design.md).
+
 ## Recommended Next Step
 
 For each taxonomy entry, define a **Type Profile Contract** with these fields:
 
 - Required sections
-- Required metadata
+- Required metadata. This combines Core SpecLang SpecItem metadata (slug, itemType, name, version, publishStatus, authors, reviewers, committer, tags, createdAt, updatedAt, retentionPolicy, freshnessSla, lastReviewed, dependencies) with any profile-specific metadata extensions, such as BTABoKItem fields under the BTABOK profile.
 - Allowed core SpecLang declarations (data/context/systems/deployment/view registers)
 - Required core SpecLang declarations (data/context/systems/deployment/view registers)
 - CoDL concept definition (if the type maps to a BTABoK-aligned concept)
 - Type-specific semantic checks
-- Cross-document checks (expressed using CoDL's `ref<>`, `weakRef`, or `externalRef`)
+- Cross-document checks. These use Core SpecLang reference resolution through `ref<T>`, `weakRef`, and `externalRef`; the resolution machinery is provided by the core, not by each type profile.
 - Deterministic pass/fail criteria
+
+Most of the Type Profile Contract infrastructure, specifically required metadata and reference validation, is handled by Core SpecLang. Only the concept-specific validation (field constraints, cardinality on profile-specific relationships, and concept-specific semantic rules) needs to be specified per type.
 
 Once that exists, grammar work can proceed selectively and safely.
 
@@ -377,6 +431,9 @@ Once that exists, grammar work can proceed selectively and safely.
 
 11. **WIP workspace: CoDL-CaDL-Integration-Notes.md**  
     Companion integration notes recording the full alignment between this WIP corpus and the authoritative CoDL/CaDL sources, including the Option A decision and the Standard BTABoK Metadata mapping.
+
+12. **WIP workspace: Core-SpecLang-Absorption-Design.md**  
+    Authoritative record of the Option X decision. Specifies the seven infrastructure elements absorbed from the BTABOK profile into Core SpecLang (standard metadata profile, reference types, relationship declarations, retention policy, diagnostic extensions, slug rules, and ten core validators), and the BTABOK-profile scope that remains after the absorption. Used to reclassify the validation concerns in this analysis as core or profile-specific.
 
 ### Interpretive synthesis from the analysis
 

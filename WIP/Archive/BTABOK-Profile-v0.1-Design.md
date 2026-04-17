@@ -26,7 +26,7 @@ This document specifies version 0.1 of the BTABOK Profile for SpecLang. It is th
 - The formal activation mechanism for the BTABOK profile
 - The catalog of CoDL concept types the profile defines
 - The catalog of CaDL canvases the profile ships with
-- The Manifest Type Registry v2 schema
+- The Manifest Type Registry schema
 - The validator enumeration and plug-in model
 - The diagnostic model (warnings by default, treat-warnings-as-errors opt-in)
 - Cross-document reference resolution rules
@@ -61,6 +61,7 @@ The following decisions are already settled and are not revisited in this docume
 | Authoring command | `/spec-btabok` slash command | User decision |
 | Validation responsibility | SpecLang must be robust enough to validate each spec | User decision |
 | Canonical concept syntax | CoDL 0.2 with optional SpecLang-style aliases (Option A) | CoDL-CaDL-Integration-Notes.md |
+| Core SpecLang absorption | Option X: Standard Metadata Profile fields, reference types, relationship declarations with cardinality, retention policy, diagnostic code extensions, slug rules, and ten core validators move from the BTABOK profile to Core SpecLang | Core-SpecLang-Absorption-Design.md |
 
 ## 3. Profile Activation and Composition
 
@@ -139,7 +140,9 @@ Activating the profile does NOT change:
 
 The BTABOK profile defines 14 CoDL concept types at v0.1. The concepts are grouped by the BTABOK concern they serve.
 
-All concepts carry the Standard BTABoK Metadata profile (slug, itemType, name, shortDescription, version, bokStatus, publishStatus, accessTier, authors, reviewers, committer, tags, certainty, createdAt, updatedAt). This is not repeated in each definition below; it is implicit.
+> Note: The Standard Metadata Profile fields used on every concept (slug, itemType, name, shortDescription, version, publishStatus, authors, reviewers, committer, tags, createdAt, updatedAt, retentionPolicy, freshnessSla, lastReviewed, dependencies) are no longer BTABOK-specific. They live in Core SpecLang per the Core SpecLang Absorption design (see Appendix D). `BTABoKItem` is a profile-specific extension that adds BTABOK-specific fields (accessTier, bokStatus, certainty, baseVersion, topicAreaId, and the other items listed in that design) on top of the core `SpecItem` metadata.
+
+Each BTABOK-profile concept therefore carries a combined metadata profile: the Core SpecItem metadata (implicit, supplied by core SpecLang) plus the BTABoKItem extension (added by the profile). The concept definitions below and in Appendix A do not repeat the core fields; they are implicit. Profile-specific fields from BTABoKItem are what the BTABOK profile adds.
 
 Full CoDL definitions for each concept are in Appendix A. This section describes their purpose, scope, and principal relationships.
 
@@ -239,6 +242,8 @@ Captures a scorecard that aggregates metrics for a specific audience (executive,
 
 19 concept types total at v0.1. The BTABOK-EngagementModel-Mapping referred to 14 concept types in its prior revision; this design adds `CanvasDefinition`, `MetricDefinition`, and `ScorecardDefinition` which emerged from the Global Corp exemplar work but were not formally enumerated in the mapping document. These three are SpecChat-local additions that use CoDL syntax but are not BTABoK-standard concepts. The v0.1 catalog therefore is: `StakeholderCard`, `PrincipleCard`, `ASRCard`, `DecisionRecord`, `GovernanceBody`, `GovernanceRule`, `WaiverRecord`, `ViewpointCard`, `CanvasDefinition`, `QualityAttributeScenario`, `StandardCard`, `CapabilityCard`, `RoadmapItem`, `TransitionArchitecture`, `RiskCard`, `ExperimentCard`, `LegacyModernizationRecord`, `MetricDefinition`, and `ScorecardDefinition`.
 
+While 19 concept types are defined for the BTABOK profile, the infrastructure concerns underpinning them (metadata, references, retention, relationship declarations, diagnostic codes) are no longer BTABOK-invented. They are Core SpecLang features that the BTABOK concept definitions use. The profile contributes the concept shapes and the BTABoKItem metadata extension; the core plumbing that carries them is shared with every profile.
+
 Full CoDL definitions in **Appendix A**.
 
 ## 5. CaDL Canvas Catalog
@@ -280,27 +285,38 @@ Canvases respect the governance posture. A canvas that references concepts behin
 
 Full CaDL definitions in **Appendix B**.
 
-## 6. Manifest Type Registry v2
+## 6. Manifest Type Registry
 
-The Manifest Type Registry v2 is the schema that every BTABOK-profile manifest must conform to. It extends the v1 document type registry (which was an informal table of six types) into a structured definition that the validator can enforce.
+The Manifest Type Registry is the canonical manifest schema for BTABOK-profile collections. SpecChat is pre-1.0 and there is no prior manifest version to be backward compatible with, so the registry is not versioned as "v2." It replaces the informal document type table previously used in the exemplar work with a structured definition the validator can enforce.
+
+Fields used for metadata, retention, and cross-document references draw from Core SpecLang rather than from profile-specific conventions. The registry shape below therefore mixes core fields (which every profile sees) with BTABOK-specific fields (which apply only when `Profile.profileName = BTABOK`).
 
 ### 6.1 Registry structure
 
 ```
 concept CollectionManifest {
+  // The meta block carries the Core SpecItem metadata profile (slug, itemType,
+  // name, shortDescription, version, publishStatus, authors, reviewers,
+  // committer, tags, createdAt, updatedAt, retentionPolicy, freshnessSla,
+  // lastReviewed, dependencies). Those fields are supplied by Core SpecLang
+  // and apply to every profile. The only field below that is BTABOK-specific
+  // is `accessTier`, contributed by the BTABoKItem metadata extension.
   meta {
+    // Core SpecItem fields (supplied by Core SpecLang):
     slug: slug required
     itemType: shortText required                 // "CollectionManifest"
     name: shortText required
     shortDescription: text optional
     version: integer required
     publishStatus: enum(Draft, Review, Approved, Published, Retired) required
-    accessTier: enum(Free, Member, Paid, Restricted) required
     authors: list<PersonRef> required min 1
     reviewers: list<PersonRef> optional
     committer: PersonRef required
     createdAt: datetime required
     updatedAt: datetime required
+
+    // BTABoKItem extension fields (BTABOK profile only):
+    accessTier: enum(Free, Member, Paid, Restricted) required
   }
 
   section Profile {
@@ -371,7 +387,7 @@ concept CollectionManifest {
 
 ### 6.2 What the registry enforces
 
-The v2 registry is machine-validated. Violations produce diagnostics per Section 11.
+The registry is machine-validated. Violations produce diagnostics per Section 11.
 
 - Every spec file in `Inventory` must declare its `codlItemType` and that item type must appear in `TypeRegistry`.
 - Every spec marked `everGreen: true` must declare a `freshnessSla`.
@@ -381,9 +397,9 @@ The v2 registry is machine-validated. Violations produce diagnostics per Section
 - Execution order respects the dependency graph (no tier N entry depends on a tier N+k entry).
 - `Profile.profileName` must be `BTABOK` for this profile to apply; otherwise this document's rules do not engage.
 
-### 6.3 Backward compatibility
+### 6.3 Profile compatibility
 
-v1 manifests (those not using the v2 structure) remain valid under the `Core` profile. When a v1 manifest declares `Profile.profileName: BTABOK`, the validator treats missing v2 fields as migration errors per Section 15.
+SpecChat is pre-1.0; there is no prior manifest version to remain compatible with. Manifests that do not use this registry structure but declare `Profile.profileName: Core` are treated as `Core`-profile collections and pass through core validation only. Manifests that declare `Profile.profileName: BTABOK` but lack registry fields required here fail validation with migration diagnostics per Section 15.
 
 ## 7. Type Profile Contracts
 
@@ -405,33 +421,46 @@ SpecChat's MCP server already exposes typed validation tools:
 
 The BTABOK profile extends this set without modifying existing validators.
 
-### 8.2 New BTABOK-profile validators at v0.1
+### 8.2 Validators at v0.1
 
-| Validator | Checks | Severity default |
-|---|---|---|
-| `check_codl_metadata` | Every concept has a complete Standard BTABoK Metadata profile | Error |
-| `check_slug_uniqueness` | Slugs are unique within the collection | Error |
-| `check_slug_format` | Slugs are URL-safe lowercase with hyphens | Error |
-| `check_reference_resolution` | All `ref<T>` targets exist in the collection | Error |
-| `check_weakref_resolution` | All `weakRef` targets are declared as intentionally external | Warning |
-| `check_externalref_validity` | All `externalRef` entries have valid `system`, `refId`, and `url` when present | Warning |
-| `check_asr_traceability` | Every ASR with structural significance has at least one trace to a component | Warning |
-| `check_asr_addressed_by_decision` | Every ASR has at least one addressing `DecisionRecord` | Warning |
-| `check_decision_scope_type` | Every `DecisionRecord` declares `scope` and `type` | Error |
-| `check_decision_cascades` | Cascade references resolve to existing `DecisionRecord` instances | Error |
-| `check_principle_links` | Every `PrincipleCard` links to at least one ASR it implements | Warning |
-| `check_stakeholder_coverage` | Every `StakeholderCard` concern has at least one addressing view or constraint | Warning |
-| `check_viewpoint_coverage` | Every declared viewpoint has at least one conforming view | Warning |
-| `check_freshness_sla` | Every `retentionPolicy: indefinite` concept has `lastReviewed + freshnessSla` in the future | Warning |
-| `check_waiver_expiration` | Every active `WaiverRecord` has an expiration date that is not in the past | Warning |
-| `check_waiver_rule_reference` | Every `WaiverRecord` references an existing `PrincipleCard` or `GovernanceRule` | Error |
-| `check_governance_approval` | Every `DecisionRecord` at `publishStatus: Approved` has a non-empty `committer` | Error |
-| `check_roadmap_capability_moves` | Every `TransitionArchitecture` references valid `CapabilityCard` instances | Error |
-| `check_canvas_target_exists` | Every `CanvasDefinition` targets an existing concept type | Error |
-| `check_metric_baseline_target` | Every `MetricDefinition` declares baseline and target | Warning |
-| `check_profile_composition` | Exactly one profile is declared (not Core + BTABOK) | Error |
+The validator roster splits into two tiers: core validators that run on every collection regardless of profile, and BTABOK-profile validators that run only when `Profile.profileName = BTABOK`.
 
-21 new validators at v0.1.
+**Core SpecLang validators (run on every collection regardless of profile):**
+
+| Validator | Code | Checks | Severity default |
+|---|---|---|---|
+| `check_metadata_completeness` | SPEC-MET | Every spec has a complete core metadata profile | Error |
+| `check_slug_uniqueness` | SPEC-SLUG | Slugs are unique within the collection | Error |
+| `check_slug_format` | SPEC-SLUG | Slugs are URL-safe lowercase with hyphens | Error |
+| `check_reference_resolution` | SPEC-REF | All `ref<T>` targets exist in the collection | Error |
+| `check_weakref_resolution` | SPEC-REF | All `weakRef` targets are declared as intentionally external | Warning |
+| `check_externalref_validity` | SPEC-REF | `externalRef` entries have valid `system`, `refId`, and `url` | Warning |
+| `check_freshness_sla` | SPEC-FRS | Every indefinite-retention concept has valid `lastReviewed + freshnessSla` | Warning |
+| `check_profile_composition` | SPEC-PRF | Exactly one profile is declared | Error |
+| `check_relationship_cardinality` | SPEC-REL | Relationships respect declared cardinality bounds | Error |
+| `check_supersedes_cycles` | SPEC-REF | No cycles in `supersedes` chains | Error |
+
+`check_metadata_completeness` was previously called `check_codl_metadata` in earlier drafts of this profile. The rename reflects its move to Core SpecLang; it now validates the core metadata profile that every spec carries, not a BTABoK-specific metadata set.
+
+**BTABOK-profile validators (active only under the BTABOK profile):**
+
+| Validator | Code | Checks | Severity default |
+|---|---|---|---|
+| `check_asr_traceability` | BTABOK-ASR | Every ASR with structural significance has at least one trace to a component | Warning |
+| `check_asr_addressed_by_decision` | BTABOK-ASR | Every ASR has at least one addressing `DecisionRecord` | Warning |
+| `check_decision_scope_type` | BTABOK-DEC | Every `DecisionRecord` declares `scope` and `type` | Error |
+| `check_decision_cascades` | BTABOK-DEC | Cascade references resolve to existing `DecisionRecord` instances | Error |
+| `check_principle_links` | BTABOK-PRN | Every `PrincipleCard` links to at least one ASR it implements | Warning |
+| `check_stakeholder_coverage` | BTABOK-STK | Every `StakeholderCard` concern has at least one addressing view or constraint | Warning |
+| `check_viewpoint_coverage` | BTABOK-VPT | Every declared viewpoint has at least one conforming view | Warning |
+| `check_waiver_expiration` | BTABOK-WVR | Every active `WaiverRecord` has expiration not in the past | Warning |
+| `check_waiver_rule_reference` | BTABOK-WVR | Every `WaiverRecord` references an existing `PrincipleCard` or `GovernanceRule` | Error |
+| `check_governance_approval` | BTABOK-GOV | Every approved `DecisionRecord` has a non-empty `committer` | Error |
+| `check_roadmap_capability_moves` | BTABOK-RMP | Every `TransitionArchitecture` references valid `CapabilityCard` instances | Error |
+| `check_canvas_target_exists` | BTABOK-CNV | Every `CanvasDefinition` targets an existing concept type | Error |
+| `check_metric_baseline_target` | BTABOK-MET | Every `MetricDefinition` declares baseline and target | Warning |
+
+10 core validators and 13 BTABOK-profile validators (23 total) at v0.1.
 
 ### 8.3 Plug-in contract
 
@@ -480,11 +509,22 @@ Override syntax in the manifest:
 
 ### 9.3 Diagnostic code namespace
 
-All BTABOK-profile diagnostic codes use the `BTABOK-` prefix with a three-letter category and a three-digit number. Example: `BTABOK-ASR-001`, `BTABOK-DEC-002`, `BTABOK-WVR-001`.
+Diagnostic codes use one of three prefixes, followed by a three-letter category and a three-digit number. Example: `SPEC-REF-001`, `STANDARD-FLO-002`, `BTABOK-ASR-001`.
 
-Categories at v0.1:
+Prefixes:
+- `SPEC-` for Core SpecLang validators (run on every collection)
+- `STANDARD-` for The Standard profile validators
+- `BTABOK-` for BTABOK profile validators
+
+Core SpecLang (`SPEC-`) categories at v0.1:
 - `MET` (metadata)
+- `SLUG` (slug format and uniqueness)
 - `REF` (reference resolution)
+- `FRS` (freshness)
+- `PRF` (profile composition)
+- `REL` (relationships and cardinality)
+
+BTABOK profile (`BTABOK-`) categories at v0.1:
 - `ASR` (requirements)
 - `DEC` (decisions)
 - `PRN` (principles)
@@ -494,19 +534,19 @@ Categories at v0.1:
 - `GOV` (governance)
 - `RMP` (roadmap)
 - `CNV` (canvases)
-- `PRF` (profile)
-- `FRS` (freshness)
 
-A codes appendix is out of scope for v0.1; it will be published as a separate reference document.
+A complete codes appendix is out of scope for v0.1; it will be published as a separate reference document maintained alongside Core SpecLang.
 
 ## 10. Cross-Document Reference Resolution
+
+> Note: Cross-document reference resolution is a Core SpecLang capability, not a BTABOK-profile feature. The rules in this section (`ref<T>` must resolve, `weakRef` resolution failures are warnings, `externalRef` is format-validated only) apply to every collection regardless of profile. The BTABOK profile inherits this behavior rather than defining it. The corresponding diagnostic codes use the `SPEC-REF` category (see Section 9.3). This section describes how the core rules apply inside a BTABOK-profile collection.
 
 ### 10.1 The three reference types
 
 | Type | Semantics | Resolution policy |
 |---|---|---|
-| `ref<ConceptType>` | Strong reference to a concept instance in the same collection | Must resolve at validation time. Unresolved references are errors (BTABOK-REF-001). |
-| `weakRef` | Reference where the target may not exist locally | Resolution attempted; unresolved references are warnings (BTABOK-REF-002), not errors. Used for cross-collection references or intentional forward references. |
+| `ref<ConceptType>` | Strong reference to a concept instance in the same collection | Must resolve at validation time. Unresolved references are errors (SPEC-REF-001). |
+| `weakRef` | Reference where the target may not exist locally | Resolution attempted; unresolved references are warnings (SPEC-REF-002), not errors. Used for cross-collection references or intentional forward references. |
 | `externalRef` | Reference to a non-BTABoK system (Jira, Confluence, ADO, Miro) | Not resolved by the validator; only syntactic validation applies (system, refId, url format). |
 
 ### 10.2 Resolution algorithm
@@ -522,7 +562,7 @@ CaDL canvases dereference `ref<T>` using the pattern `shows: fieldName -> relate
 
 ### 10.4 Cycle detection
 
-For relationships with `supersedes` and `supersededBy`, the validator walks the graph and reports cycles as errors (BTABOK-REF-003). A Decision Record cannot supersede itself transitively.
+For relationships with `supersedes` and `supersededBy`, the validator walks the graph and reports cycles as errors (SPEC-REF-003). A Decision Record cannot supersede itself transitively.
 
 ## 11. Conflict and Precedence Rules
 
@@ -658,18 +698,22 @@ The Global Corp enterprise architecture exemplar provides the known-good corpus.
 
 ### 15.2 Known-bad specs
 
-A parallel corpus of intentionally broken specs exercises each validator's negative path. At v0.1 the set includes at least one known-bad spec per validator (21 cases minimum).
+A parallel corpus of intentionally broken specs exercises each validator's negative path. At v0.1 the set includes at least one known-bad spec per validator (23 cases minimum: 10 core plus 13 BTABOK-profile).
 
-Known-bad cases include:
-- An ASR without traceability to components (`check_asr_traceability` warning)
-- A DecisionRecord without scope and type (`check_decision_scope_type` error)
-- A WaiverRecord with expiration in the past (`check_waiver_expiration` warning)
-- A cross-reference to a non-existent slug (`check_reference_resolution` error)
-- A manifest declaring both `Core` and `BTABOK` profiles (`check_profile_composition` error)
-- An ever-green spec without a `freshnessSla` (`check_freshness_sla` error)
-- A canvas targeting a non-existent concept type (`check_canvas_target_exists` error)
-- A cycle in `supersedes` chain (BTABOK-REF-003 error)
-- A severity override that demotes an error to a warning (BTABOK-PRF-001 error)
+The known-bad cases are tagged with their owning validator surface so that core cases can be reused across all three profiles (Core, TheStandard, BTABOK) and BTABOK-only cases remain scoped to BTABOK-profile runs.
+
+**Core SpecLang (SPEC-) known-bad cases:**
+- A cross-reference to a non-existent slug (`check_reference_resolution` error, SPEC-REF)
+- A manifest declaring both `Core` and `BTABOK` profiles (`check_profile_composition` error, SPEC-PRF)
+- An ever-green spec without a `freshnessSla` (`check_freshness_sla` error, SPEC-FRS)
+- A cycle in `supersedes` chain (`check_supersedes_cycles` error, SPEC-REF-003)
+- A severity override that demotes an error to a warning (SPEC-PRF, rejected at manifest load)
+
+**BTABOK-profile (BTABOK-) known-bad cases:**
+- An ASR without traceability to components (`check_asr_traceability` warning, BTABOK-ASR)
+- A DecisionRecord without scope and type (`check_decision_scope_type` error, BTABOK-DEC)
+- A WaiverRecord with expiration in the past (`check_waiver_expiration` warning, BTABOK-WVR)
+- A canvas targeting a non-existent concept type (`check_canvas_target_exists` error, BTABOK-CNV)
 
 ### 15.3 Test corpus location
 
@@ -696,6 +740,8 @@ These items are deferred to v0.2 or later.
 ---
 
 ## Appendix A. CoDL Concept Definitions
+
+> Note: Following the Core SpecLang Absorption design (see Appendix D), the meta blocks in this appendix represent the combined Core SpecItem metadata plus the BTABoKItem extension. The Core SpecItem fields (slug, itemType, name, shortDescription, version, publishStatus, authors, reviewers, committer, tags, createdAt, updatedAt, retentionPolicy, freshnessSla, lastReviewed, dependencies) are supplied by Core SpecLang and apply to every profile. The BTABoKItem fields (accessTier, bokStatus, certainty, baseVersion, and the other BTABoK-specific items) are contributed by the BTABOK profile. Individual concept meta blocks below are left as they stand; the implicit "Standard BTABoK Metadata" profile referenced in each should be read as the combined core plus BTABoKItem set.
 
 Each concept below carries the Standard BTABoK Metadata profile defined in Section 4. To keep the definitions readable, the meta block lists only concept-specific or non-default fields; the full Standard Metadata profile (slug, itemType, name, shortDescription, version, baseVersion, bokStatus, publishStatus, accessTier, authors, reviewers, committer, tags, certainty, createdAt, updatedAt) is implicit for every concept. The SpecChat extensions `freshnessSla` and `lastReviewed` are noted explicitly where the retention policy defaults to `indefinite`.
 
@@ -2306,6 +2352,8 @@ The Global Corp enterprise architecture exemplar at [Global-Corp-BTABOK-Enterpri
 `https://education.iasaglobal.org/browse/btabok/3.2/core-site/core/article/structured-concept-definition-language`
 
 **[D2]** BTABOK and SpecChat Alignment Report. Workspace: [BTA-BOK-integration.md](BTA-BOK-integration.md).
+
+**[D2.5]** Core SpecLang Absorption Design. Workspace: [Core-SpecLang-Absorption-Design.md](Core-SpecLang-Absorption-Design.md). Records the Option X decision to absorb Standard Metadata Profile fields, reference types, relationship declarations with cardinality, retention policy, diagnostic code extensions, slug rules, and ten validators from the BTABOK profile into Core SpecLang.
 
 **[D3]** CoDL and CaDL Integration Notes. Workspace: [CoDL-CaDL-Integration-Notes.md](CoDL-CaDL-Integration-Notes.md).
 

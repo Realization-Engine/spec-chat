@@ -6,9 +6,9 @@
 | Field | Value |
 |---|---|
 | Document ID | GC-EA-001 |
-| Version | 0.2 |
+| Version | 0.2.0 |
 | Created | 2026-04-16 |
-| Last Reviewed | 2026-04-16 |
+| Last Reviewed | 2026-04-17 |
 | State | Draft |
 | Owner | PER-01 Lena Brandt, Chief Architect |
 | Approver | PER-11 Anja Petersen, Chair EARB |
@@ -45,13 +45,19 @@ Every artifact in this document carries a stable, human-readable identifier, a n
 
 This document is designed as a BTABOK-complete exemplar. Following the April 2026 publication of the Concept Definition Language (CoDL) and Canvas Definition Language (CaDL) by IASA Global on the BTABoK 3.2 education portal, it also doubles as a seed for CoDL concept instances and CaDL canvas definitions.
 
-The stable IDs used throughout this document (ASR-01, ASD-01, WVR-01, STK-01, VP-01, V-01, and so on) correspond directly to CoDL `slug` values on their respective concept instances. The first column of each artifact table therefore maps to the CoDL Standard Metadata profile field `slug` (URL-safe stable identifier).
+A subsequent decision recorded in `WIP/SpecLang-Design.md` (Option X) absorbs specific infrastructure concerns into Core SpecLang. As a consequence of that decision, several conventions used throughout this document are no longer BTABOK-profile-specific; they are Core SpecLang features that apply to every spec collection regardless of profile.
 
-The Owner and Approver fields used throughout this document correspond to fields in the CoDL Standard Metadata profile. Owner aligns with `committer` (the single owning steward of a concept) and with membership in `authors`. Approver aligns with membership in `reviewers`, or with `committer` when the approver is also the owning steward.
+The stable IDs used throughout this document (ASR-01, ASD-01, WVR-01, STK-01, VP-01, V-01, and so on) correspond to the Core SpecLang `slug` field. The first column of each artifact table therefore maps to the Core SpecItem metadata profile field `slug` (URL-safe stable identifier). Slug uniqueness and format rules are enforced by core validators and apply to every SpecChat collection.
 
-The View Gallery in section 28 serves as a catalog of CaDL canvases defined over the document's CoDL concepts. Following the governing CaDL principle that "a canvas is a view of a concept, not a separate stored object type," each V-xx entry describes a rendering over concepts defined elsewhere in this document, not a new stored object.
+The Owner and Approver fields used throughout this document correspond to fields in the Core SpecItem metadata profile. Owner aligns with `committer` (the single owning steward) and with membership in `authors`. Approver aligns with membership in `reviewers`, or with `committer` when the approver is also the owning steward. These fields are core infrastructure, not BTABOK-specific.
 
-For the full alignment between CoDL, CaDL, and the SpecLang/SpecChat vocabulary used in earlier BTABOK work, see `WIP/CoDL-CaDL-Integration-Notes.md`. The architectural decision recorded there is Option A: CoDL syntax is canonical, with optional SpecLang-style aliases.
+The ever-green declaration, freshness SLA, and retention policy used throughout this document are Core SpecLang features. The `retentionPolicy` enum (`indefinite`, `archive-on-deprecated`, `delete-on-superseded`) applies to every spec regardless of profile.
+
+The BTABOK profile contributes on top of the core infrastructure: the 19 BTABOK concept types (StakeholderCard, PrincipleCard, ASRCard, DecisionRecord, GovernanceBody, GovernanceRule, WaiverRecord, ViewpointCard, CanvasDefinition, QualityAttributeScenario, StandardCard, CapabilityCard, RoadmapItem, TransitionArchitecture, RiskCard, ExperimentCard, LegacyModernizationRecord, MetricDefinition, ScorecardDefinition), the BTABoKItem metadata extensions (accessTier, bokStatus, certainty, baseVersion, and BTABoK-specific identity fields), and the 20 CaDL canvases. These remain profile-scoped and activate only when the BTABOK profile is declared.
+
+The View Gallery in section 28 serves as a catalog of CaDL canvases defined over the document's concepts. Following the governing CaDL principle that "a canvas is a view of a concept, not a separate stored object type," each V-xx entry describes a rendering over concepts defined elsewhere in this document, not a new stored object.
+
+For the full alignment between CoDL, CaDL, and the SpecLang/SpecChat vocabulary, and for the Core SpecLang absorption decision, see `WIP/SpecLang-Design.md`. Two architectural decisions recorded there are relevant here: Option A (CoDL syntax is canonical, with optional SpecLang-style aliases) and Option X (infrastructure concerns absorbed into Core SpecLang).
 
 ## 2. Design Intent
 
@@ -87,7 +93,7 @@ DCSA Track & Trace standards provide common data semantics, APIs, and milestone 
 ### 3.4 Traceability is becoming regulatory infrastructure
 
 The EU Ecodesign for Sustainable Products Regulation introduces the Digital Product Passport as a digital identity for products, components, and materials. [R10]
-The U.S. FDA FSMA 204 final rule requires Critical Tracking Events and Key Data Elements for covered foods, with a compliance date of January 20, 2026. [R11]
+The U.S. FDA FSMA 204 final rule requires Critical Tracking Events and Key Data Elements for covered foods. The original January 20, 2026 compliance date has been subject to FDA extension proposals; current enforcement timing should be confirmed against FDA rulemaking status at time of reference. [R11]
 
 ### 3.5 Security must extend into the supply chain itself
 
@@ -239,6 +245,7 @@ Named personas referenced throughout this document. In a real deployment these w
 | PER-18 | Kenji Sato | Chief Architect of Operations | Singapore |
 | PER-19 | Emma Richardson | Product Architect, Control Tower | Atlanta |
 | PER-20 | Aleksandr Volkov | Platform SRE Lead | Zurich |
+| PER-21 | Astrid Wilhelm | Regional Operations Lead, EU | Rotterdam |
 
 ## 10. Stakeholders and Concerns
 
@@ -253,7 +260,7 @@ Each stakeholder has a stable ID, a named occupant (from the Personas Directory)
 | STK-01 | CEO (PER-05) | Growth, market expansion, resilience narrative | High | VP-01 Strategic, VP-10 Outcome | Quarterly architecture review, strategic reviews |
 | STK-02 | CFO (PER-06) | Margin, implementation cost, hosting efficiency | High | VP-02 Capability, VP-10 Outcome | Monthly scorecard, annual investment review |
 | STK-03 | COO (PER-07) | Onboarding speed, service reliability, regional execution | High | VP-06 Operational, VP-08 Deployment | Weekly ops sync, regional checkpoints |
-| STK-04 | CPO (PER-09) | Product coherence, differentiation, roadmap reuse | High | VP-02 Capability, VP-04 Decision rollup | Biweekly product architecture sync |
+| STK-04 | CPO (PER-09) | Product coherence, differentiation, roadmap reuse | High | VP-02 Capability, VP-04 Information | Biweekly product architecture sync |
 | STK-05 | Chief Architect (PER-01) | Coherence, standards, reuse, technical debt, repository quality | High | All | EARB chair, standards governance lead |
 | STK-06 | CISO (PER-08) | Tenant isolation, supplier cyber risk, incident response | High | VP-07 Security, VP-09 Governance | EARB member, security review gate |
 | STK-07 | Regional Ops Lead APAC (PER-12) | Local partner realities, customs timing, SLA practicality | Medium-high | VP-06 Operational, VP-08 Deployment | Regional Architecture Forum |
@@ -261,7 +268,7 @@ Each stakeholder has a stable ID, a named occupant (from the Personas Directory)
 | STK-09 | Customer Supply Chain Director (external) | Visibility, ETA confidence, exception handling | High | VP-06 Operational, VP-02 Capability | Customer Advisory Board |
 | STK-10 | Regulatory Affairs Lead (PER-10) | Auditability, retention, traceability completeness | Medium-high | VP-04 Information, VP-07 Security | Compliance review board |
 | STK-11 | Sustainability Lead (PER-15) | DPP readiness, product provenance, circularity data | Medium | VP-04 Information, VP-02 Capability | Sustainability working group |
-| STK-12 | EARB (PER-11 chair) | Exception handling, standards use, risk posture | High | VP-09 Governance, VP-04 Decision rollup | EARB cadence and waiver process |
+| STK-12 | EARB (PER-11 chair) | Exception handling, standards use, risk posture | High | VP-09 Governance, VP-04 Information | EARB cadence and waiver process |
 
 The Influence column maps cleanly to a CoDL enum field on the StakeholderCard concept: `influence: enum(high, medium_high, medium, low)`. The power/interest grid positioning in section 10.1 is data that would be stored on each StakeholderCard instance (typed fields for power and interest scores, with the quadrant derived).
 
@@ -287,12 +294,12 @@ Global Corp. uses the following enterprise principles. Each has a stable ID, an 
 | P-01 | Standards before custom | Prefer GS1 EPCIS, DCSA event models, and published partner APIs before inventing bespoke schemas. [R8][R9] | PER-03 | PER-11 | ASR-04 | ASD-01 |
 | P-02 | Events are the source of operational truth | The platform is event-driven first, report-driven second. | PER-02 | PER-11 | ASR-01, ASR-05 | ASD-02 |
 | P-03 | Canonical identity, federated evidence | Global Corp. normalizes core identifiers while preserving source evidence and lineage. | PER-02 | PER-11 | ASR-02 | ASD-04 |
-| P-04 | Trust requires lineage | Every externally significant state must be explainable from retained evidence. | PER-17 | PER-11 | ASR-02, ASR-06 | ASD-04 |
+| P-04 | Trust requires lineage | Every externally significant state must be explainable from retained evidence. | PER-17 | PER-11 | ASR-02, ASR-06 | ASD-04, ASD-05 |
 | P-05 | Views must serve stakeholders | No architecture artifact exists without a named audience and decision purpose. [R3][R4] | PER-01 | PER-11 | ASR-09 | ASD-08 |
 | P-06 | Deliverables stay lightweight | Architecture deliverables are tools for thinking, communication, and leadership, not document bulk. [R4] | PER-16 | PER-11 | ASR-09 | ASD-08 |
 | P-07 | Repository is first for architects | The repository exists first to improve architectural decision-making, then to serve the wider enterprise. [R5] | PER-16 | PER-11 | ASR-09 | ASD-06 |
 | P-08 | Governance should guide, not suffocate | Standards and reviews should accelerate good decisions, with waivers for justified exceptions. [R6] | PER-11 | PER-05 | ASR-08 | ASD-07 |
-| P-09 | Global consistency, regional compliance | Shared platforms are global; legal controls, retention, and reporting adapt by jurisdiction. | PER-01 | PER-05 | ASR-03 | ASD-03 |
+| P-09 | Global consistency, regional compliance | Shared platforms are global; legal controls, retention, and reporting adapt by jurisdiction. | PER-01 | PER-05 | ASR-03 | ASD-03, ASD-05 |
 | P-10 | Security includes the supply chain | Cybersecurity, third-party risk, operational resilience, and physical supply-chain trust are designed together. [R12][R13] | PER-04 | PER-08 | ASR-02 | (cross-cutting) |
 
 In CoDL terms, the Owner column corresponds to the `committer` field on each PrincipleCard (the single owning steward). The Approver column corresponds to membership in `reviewers`, or to `committer` when the approver is also the owning steward. The Implements and Depends on columns correspond to CoDL relationship declarations on the PrincipleCard concept, expressed as typed references such as `implements<ASRCard>` and `uses<ASRCard>`.
@@ -811,7 +818,7 @@ concept DecisionRecord extends StandardMetadata {
 | Recommendation | (b) EPCIS-aligned canonical with DCSA transport extensions |
 | Reversibility | Low |
 | Method | Budgeted evaluation with standards workshop |
-| Linked ASRs | ASR-01, ASR-04, ASR-07 |
+| Linked ASRs | ASR-01, ASR-04, ASR-07, ASR-10 |
 | Linked principles | P-01, P-02 |
 | Cascades | ASD-02, ASD-04 |
 | Status | Accepted |
@@ -829,7 +836,7 @@ concept DecisionRecord extends StandardMetadata {
 | Recommendation | (b) separate services |
 | Reversibility | Medium |
 | Method | Architecture spike with load modeling |
-| Linked ASRs | ASR-01 |
+| Linked ASRs | ASR-01, ASR-05 |
 | Linked principles | P-02 |
 | Cascades | ASD-05 |
 | Status | Accepted |
@@ -865,7 +872,7 @@ concept DecisionRecord extends StandardMetadata {
 | Recommendation | (b) first-class lineage |
 | Reversibility | Low |
 | Method | Cost-benefit analysis |
-| Linked ASRs | ASR-02, ASR-06 |
+| Linked ASRs | ASR-01, ASR-02, ASR-06, ASR-07 |
 | Linked principles | P-03, P-04 |
 | Cascades | INV-01, INV-02 |
 | Status | Accepted |
@@ -883,7 +890,7 @@ concept DecisionRecord extends StandardMetadata {
 | Recommendation | (b) separate compliance services |
 | Reversibility | Medium |
 | Method | Scoring |
-| Linked ASRs | ASR-06, ASR-03 |
+| Linked ASRs | ASR-02, ASR-03, ASR-06 |
 | Linked principles | P-04, P-09 |
 | Cascades | INV-05, INV-06 |
 | Status | Accepted |
@@ -1015,7 +1022,7 @@ Every deliverable has an ID, an owner, an approver, a review cadence, a freshnes
 | GOV-DDC-S | Domain Design Council: Security | Security architecture, third-party risk | Define security standards | PER-04 | Biweekly |
 | GOV-DDC-O | Domain Design Council: Operations | Observability, SRE, runbooks | Define operational standards | PER-18 | Biweekly |
 | GOV-DDC-C | Domain Design Council: Compliance | Retention, audit, regulatory packs | Define compliance standards | PER-17 | Biweekly |
-| GOV-RAF-EU | Regional Architecture Forum, EU | Local legal and operational fit | Escalate local exceptions | PER-15 | Monthly |
+| GOV-RAF-EU | Regional Architecture Forum, EU | Local legal and operational fit | Escalate local exceptions | PER-21 | Monthly |
 | GOV-RAF-US | Regional Architecture Forum, Americas | Local legal and operational fit | Escalate local exceptions | PER-13 | Monthly |
 | GOV-RAF-APAC | Regional Architecture Forum, APAC | Local legal and operational fit | Escalate local exceptions | PER-12 | Monthly |
 | GOV-RAF-MEA | Regional Architecture Forum, MEA | Local legal and operational fit | Escalate local exceptions | PER-14 | Monthly |
@@ -1082,7 +1089,7 @@ Concrete waivers demonstrating the pattern. Every waiver has a rule reference, j
 
 | Field | Value |
 |---|---|
-| Rule reference | P-07 Repository discipline, reference architecture for APP-PC |
+| Rule reference | P-07 Repository is first for architects, reference architecture for APP-PC |
 | Description | Legacy-Bridge module shares a canonical model library with its successor during the LGY-01 decommissioning window. |
 | Justification | Parallel operation required during migration to guarantee evidence continuity. |
 | Risk | Shared library reduces isolation until migration completes. |
@@ -1574,12 +1581,14 @@ https://www.nist.gov/publications/nist-cybersecurity-framework-20-quick-start-gu
 https://www.iso.org/standard/79612.html
 
 ### Prior workspace learning
-**[R14]** BTABOK and SpecChat Alignment Report, workspace source file `BTA-BOK-integration.md`, dated 2026-04-16.
+**[R14]** BTABOK and SpecChat Alignment Report, workspace source file `WIP/Archive/BTA-BOK-integration.md`, dated 2026-04-16. The original broad-scope gap analysis, preserved for provenance.
 
 ### CoDL and CaDL (authoritative)
 **[R15]** Preiss, Paul. Structured Concept Definition Language. BTABoK 3.2, IASA Global Education Portal (2026).
 
-**[R16]** WIP workspace: CoDL-CaDL-Integration-Notes.md
+**[R16]** WIP workspace: `SpecLang-Design.md`. The consolidated design covering Core SpecLang, the BTABOK profile, CoDL and CaDL alignment, and the Engagement Model scope. It records both the Option A decision (CoDL syntax canonical) and the Option X decision (infrastructure absorption into Core SpecLang). It supersedes and incorporates the prior CoDL-CaDL-Integration-Notes.md, Core-SpecLang-Absorption-Design.md, BTABOK-Profile-v0.1-Design.md, and BTABOK-EngagementModel-Mapping.md (all now in `WIP/Archive/`).
+
+**[R17]** WIP workspace: `Spec-Type-System.md`. Consolidated design covering the spec type taxonomy, rationale, and validation architecture.
 
 ---
 
@@ -1588,6 +1597,8 @@ https://www.iso.org/standard/79612.html
 This appendix maps the Global Corp. enterprise architecture into a SpecChat spec collection using the BTABOK profile. It is a scaffolding sketch, not a final spec set.
 
 ### B.1 Proposed spec collection
+
+Every file in the table below carries the Core SpecLang SpecItem metadata (specLangVersion, slug, itemType, name, version, publishStatus, authors, reviewers, committer, tags, createdAt, updatedAt, retentionPolicy, and freshnessSla for indefinite-retention specs) regardless of whether its Profile column shows Core, Core + BTABOK, or BTABOK. The collection manifest additionally declares profileVersion, codlVersion, and cadlVersion when the BTABOK profile is active. Core SpecItem metadata is universal infrastructure after the Option X decision. Profile scope determines only which concept types, concept-specific fields, and CaDL canvases activate on top of the core.
 
 | File | Type | Profile | Tier | CoDL itemType | Description |
 |---|---|---|---|---|---|
@@ -1611,6 +1622,7 @@ This appendix maps the Global Corp. enterprise architecture into a SpecChat spec
 | legacy-globaltrack-apac.decommission.spec.md | Legacy Modernization Spec | BTABOK | 3 | LegacyModernizationRecord | LGY-01 decommissioning plan |
 | experiment-cold-chain-fusion.spec.md | Experiment Spec | BTABOK | 3 | ExperimentCard | EXP-01 |
 | experiment-dpp-electronics.spec.md | Experiment Spec | BTABOK | 3 | ExperimentCard | EXP-02 |
+| experiment-multimodal-eta.spec.md | Experiment Spec | BTABOK | 3 | ExperimentCard | EXP-03 |
 | outcome-scorecard.spec.md | Scorecard Spec | BTABOK | 2 | ScorecardDefinition | MET-BZ, MET-AR, MET-OP |
 
 ### B.2 Execution order (tiered)
@@ -1622,13 +1634,13 @@ This appendix maps the Global Corp. enterprise architecture into a SpecChat spec
 
 ### B.3 Cross-document reference convention
 
-All references use the stable human-readable IDs introduced in this document (ASR-xx, ASD-xx, WVR-xx, STK-xx, VP-xx, V-xx, MET-xx, STD-xx, ENT-xx, CTR-xx, INV-xx, DYN-xx, EXP-xx, LGY-xx, CAP-xx, P-xx, PER-xx, BSVC-xx, APP-xx, DEL-xx, REP-xx, GOV-xx, VS-xx, RSK-xx). Each ID is globally unique within the Global Corp. collection. Cross-spec references cite the ID with no file-path dependency, so moves and renames do not break the reference graph.
+All references use the stable human-readable IDs introduced in this document (ASR-xx, ASD-xx, WVR-xx, STK-xx, VP-xx, V-xx, MET-xx, STD-xx, ENT-xx, CTR-xx, INV-xx, DYN-xx, EXP-xx, LGY-xx, CAP-xx, P-xx, PER-xx, BSVC-xx, APP-xx, DEL-xx, REP-xx, GOV-xx, VS-xx, RSK-xx). Each ID serves as the Core SpecLang `slug` field. Cross-spec references use the three Core SpecLang reference types (introduced from CoDL via Option X): `ref<T>` for strong references within the collection, `weakRef` for references that may resolve outside the collection, and `externalRef` for references to non-SpecChat systems (Jira, Confluence, Miro). Each ID is globally unique within the Global Corp. collection. Cross-spec references cite the ID with no file-path dependency, so moves and renames do not break the reference graph.
 
 ---
 
 ## Appendix C. Scope Mapping: BTABOK Engagement Model vs. Out-of-Scope Models
 
-Per the SpecChat BTABOK integration scope decision (see `WIP/BTABOK-EngagementModel-Mapping.md`), only the Engagement Model is mapped to SpecChat. This appendix declares which sections of this document feed Engagement Model specs and which are enterprise context that would not be expressed as SpecChat artifacts.
+Per the SpecChat BTABOK integration scope decision (see `WIP/SpecLang-Design.md` Section 7), only the Engagement Model is mapped to SpecChat. This appendix declares which sections of this document feed Engagement Model specs and which are enterprise context that would not be expressed as SpecChat artifacts.
 
 | Section | Content | SpecChat EM extraction | Notes |
 |---|---|---|---|

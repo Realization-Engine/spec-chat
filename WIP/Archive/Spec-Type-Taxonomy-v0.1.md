@@ -29,6 +29,8 @@ Projections from spec types (registries, matrices, coverage reports) are defined
 
 For the full alignment, including the Option A decision (adopt CoDL syntax as canonical, allow SpecLang-style aliases), see CoDL-CaDL-Integration-Notes.md.
 
+As of the Option X decision, specific CoDL infrastructure elements are Core SpecLang features, not BTABOK-profile features. The standard metadata profile (slug, itemType, name, version, publishStatus, authors, reviewers, committer, tags, createdAt, updatedAt, retentionPolicy, freshnessSla, lastReviewed, dependencies), reference types (ref<T>, weakRef, externalRef), relationship declarations with cardinality, the retention policy enum, and diagnostic record extensions (code, validator, suggestion) are all part of Core SpecLang. Every spec carries this infrastructure regardless of profile. BTABOK-specific concepts, metadata extensions, and validators still live in the BTABOK profile. For the full record of what moved and what remained, see Core-SpecLang-Absorption-Design.md.
+
 ## 1. Governing idea
 
 A spec type should not be treated as a filename label only. It should be treated as a first-class classification with five dimensions.
@@ -92,7 +94,7 @@ These control approval, exceptions, sequencing, and verification.
 ### 3.1 Manifest
 **Role:** Root control document for a collection.
 
-**CoDL concept:** CollectionManifest (SpecChat-specific; not a BTABoK standard concept, but modeled as a CoDL concept for uniformity)
+**CoDL concept:** CollectionManifest (SpecChat-specific; not a BTABoK standard concept, but modeled as a CoDL concept for uniformity). The concept definition combines Core SpecLang metadata (slug, itemType, name, version, authors, committer, retentionPolicy, and the rest of the standard metadata profile) with any profile-specific extensions, such as BTABoKItem fields when the BTABOK profile is active.
 
 **Scope:** One spec collection.
 
@@ -401,6 +403,8 @@ A SpecChat spec type IS a CoDL concept. The two terms describe the same artifact
 
 A profile, by contrast, shapes which spec types and concept types are in scope for a given collection and which CoDL extensions are active. Core, The Standard, and a future BTABOK profile each enable a different working set of concept types.
 
+A third distinction now matters. Some CoDL metadata fields belong to Core SpecLang as universal infrastructure, while others are profile extensions. Core SpecLang provides the base SpecItem metadata (slug, itemType, name, version, publishStatus, authors, reviewers, committer, tags, createdAt, updatedAt, retentionPolicy, freshnessSla, lastReviewed, dependencies) that every spec carries regardless of profile. Profiles add their own metadata fields on top. The BTABOK profile, for example, adds BTABoKItem fields such as accessTier, bokStatus, certainty, and the BTABoK identifier set. Every concept definition in every profile therefore combines Core SpecLang metadata with whatever profile-specific metadata the active profile declares.
+
 ## 6. Recommended adoption order
 
 ### Pass 1: Taxonomy only, no grammar change
@@ -433,7 +437,7 @@ Formalize `Profile` as manifest metadata:
 
 This keeps BTABOK out of the core grammar until repeated use shows exactly which constructs deserve first-class syntax.
 
-Adopting the BTABOK profile also means adopting CoDL 0.2 as the canonical concept syntax and CaDL as the canvas syntax for that profile. This is the Option A decision documented in CoDL-CaDL-Integration-Notes.md: CoDL concept records are the canonical form; SpecLang-style aliases are permitted for author convenience but desugar to CoDL.
+Adopting the BTABOK profile also means adopting CoDL 0.2 as the canonical concept syntax and CaDL as the canvas syntax for BTABOK-specific concept types. This is the Option A decision documented in CoDL-CaDL-Integration-Notes.md: CoDL concept records are the canonical form; SpecLang-style aliases are permitted for author convenience but desugar to CoDL. The CoDL 0.2 adoption sits on top of the Core SpecLang infrastructure (standard metadata, reference types, relationship declarations, retention policy, diagnostic extensions) that is always present regardless of profile.
 
 ### Pass 3: Selective grammar expansion
 Only after real use, add BTABOK-native constructs that prove load-bearing, likely in this order:
@@ -445,7 +449,7 @@ Only after real use, add BTABOK-native constructs that prove load-bearing, likel
 - `risk`
 - `waiver`
 
-These are ergonomic SpecLang aliases that desugar to CoDL concept records. They are not separate from CoDL; they are short forms that compile to the corresponding CoDL concept type (ViewpointCard, StakeholderCard, ASRCard, PrincipleCard, RiskCard, WaiverRecord).
+These items are BTABOK-specific concept types. The core language already handles slug, metadata, references, and relationships after Option X, so the grammar work in this pass is limited to profile-specific concept vocabulary rather than infrastructure. These are ergonomic SpecLang aliases that desugar to CoDL concept records. They are not separate from CoDL; they are short forms that compile to the corresponding CoDL concept type (ViewpointCard, StakeholderCard, ASRCard, PrincipleCard, RiskCard, WaiverRecord).
 
 Do not begin by adding the entire BTABOK vocabulary to the core grammar.
 
@@ -551,6 +555,10 @@ The next best move is to define a **Manifest Type Registry v2** plus the **requi
 1. **WIP workspace: CoDL-CaDL-Integration-Notes.md**
 
    Used as the companion document recording the full alignment between this taxonomy and the authoritative CoDL/CaDL sources, including the Option A decision to adopt CoDL syntax as the canonical form under the BTABOK profile.
+
+2. **WIP workspace: Core-SpecLang-Absorption-Design.md**
+
+   Used as the authoritative record of the Option X decision: the seven infrastructure elements (standard metadata profile, reference types, relationship declarations, retention policy, diagnostic extensions, slug rules, and ten core validators) absorbed from the BTABOK profile into Core SpecLang, and the BTABOK-profile scope that remains after the absorption.
 
 ## Appendix B. Notes on interpretation
 
