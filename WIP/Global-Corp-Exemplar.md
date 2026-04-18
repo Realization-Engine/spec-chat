@@ -1,6 +1,14 @@
 # Global Corp. Enterprise Architecture
 ## A Fictional BTABOK-Complete Enterprise Architecture for Global Supply Chain Tracking
 
+## Status
+
+**This document is a narrative design artifact, not a SpecChat spec collection.** The data it enumerates (personas, ASRs, ASDs, waivers, viewpoints, views, entities, contracts, invariants, metrics, and the rest) describes what a BTABOK-complete enterprise architecture looks like, but is not itself in a form that SpecChat validators can process.
+
+The actual spec collection derived from this narrative lives in `WIP/global-corp-specs/` (and will eventually move to `samples/global-corp/` once Phase 2c of the implementation plan ships, per [SpecChat-BTABOK-Implementation-Plan.md](SpecChat-BTABOK-Implementation-Plan.md) Section 7.3). Once the spec collection exists, **the spec files are authoritative** for all cross-references, counts, and IDs. This narrative remains as human-readable context and fiction backstory.
+
+Users looking to run SpecChat validators against Global Corp should point the tooling at the spec collection, not at this document.
+
 ## Tracking
 
 | Field | Value |
