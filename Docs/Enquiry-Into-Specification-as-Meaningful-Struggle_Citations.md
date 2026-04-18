@@ -1,20 +1,21 @@
 # References for "Enquiry Into Specification as Meaningful Struggle"
 
 *Supporting citations for the memorandum by Dennis A. Landi.*
-*Compiled 2026-03-26. Updated 2026-04-04 to reflect the v0.06 memorandum and SpecChat.*
+*Compiled 2026-03-26. Updated 2026-04-04 to reflect the v0.06 memorandum and SpecChat. Updated 2026-04-18 to reflect the v0.09 memorandum and ASAP.*
 
 ---
 
 ## Editorial Note
 
-This revision follows the structure of the current memorandum (v0.06).
+This revision follows the structure of the current memorandum (v0.09).
 
 Earlier versions cast a wide net across many adjacent traditions. This version keeps only the citation categories that directly support the paper’s argument:
 
 1. specification-driven realization already exists, now formalized through SpecChat,
 2. the specification medium must support explicit commitments, refinement, and machine execution,
 3. the discipline must still preserve meaningful human struggle,
-4. the developmental question (whether specification struggle builds FORCE without prior implementation experience) remains the most consequential open problem.
+4. the developmental question (whether specification struggle builds FORCE without prior implementation experience) remains the most consequential open problem,
+5. architecture practice contributes a body of knowledge that identifies which AI elements practice requires and which judgments practice categorically refuses, with ASAP as a concrete proposal grounded in the BTABoK.
 
 The author’s internal Storyvizor/DomainEngine materials helped sharpen the paper, but they are **illustrative only** and are not intended to carry the final paper’s argument by themselves.
 
@@ -158,24 +159,33 @@ The author’s internal Storyvizor/DomainEngine materials helped sharpen the pap
 
 ---
 
+## 10. Architecture Practice and Bodies of Knowledge
+
+**[10.1]** IASA Global. *Business Technology Architecture Body of Knowledge (BTABoK).* https://iasa-global.github.io/btabok/  
+**Digest:** Source for the AI-elements derivation in the Practice Question and Shape of a Practice Architecture sections. BTABoK organizes architecture practice into models (Engagement, Value, People, Competency) with specific workflows, roles, cadences, and judgment boundaries. The memorandum draws on BTABoK to identify the concrete elements practice requires from AI and the categorical refusals practice asserts.
+
+---
+
 ## Cross-Reference: Memorandum Sections to Citation Categories
 
 | Memorandum Section | Primary Citation Categories |
 |---|---|
 | The FORCE Problem | 6, 7 |
 | The Four Futures and the Specification Hypothesis | 1, 5, 7 |
-| An Existence Proof in Rough Form | 5 |
+| Specification-Driven Realization in Practice | 5 |
 | The Developmental Question | 1, 6, 7 |
 | The Medium Question | 2, 3, 4, 8, 9 |
 | What the Medium Must Carry | 1, 2, 3, 8, 9 |
 | The Division of Labor | 1, 5, 7 |
 | The Danger of Cosmetic Relocation | 6, 7 |
+| The Practice Question | 6, 7, 10 |
+| The Shape of a Practice Architecture | 6, 7, 10 |
 | Existing Traditions | 1, 2, 4, 5, 7 |
-| Research Agenda | 1, 2, 3, 4, 6, 8 |
-| Conclusion | 1, 2, 5, 6, 7 |
+| Research Agenda | 1, 2, 3, 4, 6, 8, 10 |
+| Conclusion | 1, 2, 5, 6, 7, 10 |
 
 ---
 
 ## Closing Note
 
-The v0.06 memorandum makes two claims more directly than earlier versions. First: the ability to specify substantial systems for machine realization already exists, now formalized through SpecChat's specification language and conversation protocol. Second, and more consequential: whether specification struggle can build the durable capability that implementation struggle built remains an open empirical question. The medium now has a concrete proposal. The developmental question does not.
+The v0.09 memorandum makes three claims more directly than earlier versions. First: the ability to specify substantial systems for machine realization already exists, now formalized through SpecChat's specification language and conversation protocol. Second: the discipline around the medium can be given an architecture that classifies machine contact by authority, suitability, and interaction pattern, declares categorical stop-lines, and refuses to widen the medium's formal scope, with ASAP as a concrete proposal grounded in the BTABoK. Third, and most consequential: whether specification struggle can build the durable capability that implementation struggle built remains an open empirical question. The medium has a concrete proposal. The practice architecture has a concrete proposal. The developmental question does not.

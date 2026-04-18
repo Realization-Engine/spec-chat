@@ -3,7 +3,7 @@
 *A companion memorandum to [The Multiplier and the Mirror](https://realization-engine.github.io/fstar/docs/The_Multiplier_and_the_Mirror.html)*
 
 **Author:** Dennis A. Landi
-**Version:** 0.08
+**Version:** 0.09
 
 ---
 
@@ -47,19 +47,23 @@ This memorandum is an enquiry into what it would take to make that substitution 
 
 ---
 
-## An Existence Proof in Rough Form
+## Specification-Driven Realization in Practice
 
-Specification-driven realization is not speculative. It is already visible in practice.
+Specification-driven realization is not speculative.
 
-A human can write analysis, architecture, constraints, implementation plans, boundary rules, test obligations, and verification expectations, then hand that stack to an LLM and receive back code that compiles, runs, and often passes unit tests. Today this takes the form of prose documents and chat sessions. A formal specification medium would consolidate the practice: typed identity, semantic relations, contracts, invariants, rationale, and confidence signals in machine-processable syntax. The LLM reads the specification model and realizes within it. It becomes, in effect, a realization engine: not a collaborator in the usual vague sense, but an executor that consumes formal commitments and produces systems that conform to them.
+A human can write analysis, architecture, constraints, implementation plans, boundary rules, test obligations, and verification expectations, then hand that stack to an LLM and receive back code that compiles, runs, and often passes unit tests. Early practice took the form of prose documents and chat sessions. A formal specification medium consolidates that practice: typed identity, semantic relations, contracts, invariants, rationale, and confidence signals in machine-processable syntax. The LLM reads the specification model and realizes within it. It becomes, in effect, a realization engine: not a collaborator in the usual vague sense, but an executor that consumes formal commitments and produces systems that conform to them.
+
+SpecChat is such a medium. Its parser and validator run as a Model Context Protocol server that LLM-backed agents query directly. Its specification model organizes a coherent kernel of construct families, each with typed identity, rationale, and confidence signals. A quality analyzer detects the structural indicators of cargo-cult specification. A profile extending the kernel into the concepts and artifacts of enterprise architecture practice is in development, adding typed objects for stakeholders, architecturally significant requirements, decision records, governance bodies, waivers, and viewpoints. A worked exemplar at enterprise scope demonstrates the arrangement under real organizational complexity.
 
 The significance is easy to miss. For decades, implementation was the main site where intent became reality. Today, much of that descent can be delegated. The implementation gap is no longer the exclusive domain of the human engineer. As the gap narrows, the decisive human work moves upward: framing, constraining, specifying, checking, and judging.
 
-This changes the posture of the enquiry. The question is not whether specification-driven realization is possible. That existence proof already exists. Two harder questions remain.
+Whether specification-driven realization is possible is no longer the question. Three harder questions remain.
 
 First: can specification work build FORCE, or does it merely produce output? This is the developmental question.
 
-Second: does the formal medium support genuine specification, or does it merely organize it? This is the medium question. It cannot be answered in the abstract. It requires a concrete proposal, and the enquiry arrives at one below.
+Second: does the formal medium support genuine specification, or does it merely organize it? This is the medium question.
+
+Third: does the practice around the medium preserve human authority over commitments, or does it let that authority drift into the LLM through habit rather than through medium failure? This is the practice question.
 
 ---
 
@@ -151,6 +155,40 @@ The standard is clear. The discipline must force contact with what is hard. With
 
 ---
 
+## The Practice Question
+
+A sound medium is necessary but not sufficient. Cosmetic relocation can occur at the practice level even when the specification document is well-formed, if authority over commitments drifts to the LLM through habit rather than through medium failure. The medium enforces what a specification *is*; it does not enforce who decides *what the specification should say*.
+
+The practice question is whether the discipline around the medium can preserve human authority at the points where judgment is load-bearing, while permitting machine work where judgment is not. Practice here is the full discipline around a specification: the workflows, the review bodies, the cadences, and the artifacts that wrap the document.
+
+The analysis below draws on the Business Technology Architecture Body of Knowledge (BTABoK), IASA's published framework for architecture practice, to identify the concrete elements practice requires from AI.
+
+Architecture practice contains work where machine contribution is structurally appropriate. Much of it is mechanical and calendrical: freshness sweeps, waiver expiries, cadence indicators, rotation tracking, maintenance-hour logging. Much of it is compositional: assembling a review packet from related artifacts, ranking candidate initiatives against declared principles, cross-referencing a canvas to its underlying competencies. Much of it is explanatory: coaching a practitioner through an unfamiliar workflow, retrieving relevant passages from the body of knowledge, drafting an artifact from prior context so the human iterates on substance rather than blank-page production. These are the AI elements practice genuinely needs. The machine is a suitable contributor here because the decisions are mechanical, the inputs are tractable, or the output is a draft the human then owns.
+
+Other work in the same practice is categorical refusal. Judgment of mentor work products. Performance rating. Granting of certifications. Allocation of funding. Hiring decisions. These are not decisions AI may eventually become capable enough to make; they are decisions the practice has declared are constitutive of its own discipline. A practice architecture that permits AI to produce output resembling such decisions, even labeled as advisory, quietly shifts authority regardless of the label.
+
+Between what the practice invites AI to do and what it categorically refuses sits a wide middle. The middle is the practice architecture's actual subject.
+
+---
+
+## The Shape of a Practice Architecture
+
+A practice architecture classifies every point of machine contact against three orthogonal axes.
+
+The first axis is authority: how hard the machine presses on a decision. Four tiers: *Enforce* (the machine refuses an action that violates a deterministic rule; no override), *Gate* (machine-checked, human-authorized), *Advise* (machine-proposed, human-decided), *Inform* (machine-executed within authored scope, human-informed). The availability of the Enforce tier depends on what the medium can deterministically check. Where the specification language has validators, machine enforcement is possible. Where the practice extends into domains the medium does not formalize, the strongest available posture is Advise. Practice authority is constrained by medium reach.
+
+The second axis is suitability: whether the machine is a suitable proposer at all, independent of how hard it would press. Four bands: *AI-strong* (machine drafts, human confirms), *AI-backstage* (machine prepares material for a human role without surfacing in the primary relationship), *AI-proposer* (machine generates candidates, human adjudicates each), *AI-excluded* (categorical refusal, matching the stop-lines above).
+
+The third axis is pattern: the choreography of the interaction. Drafting has the machine produce an artifact the human signs. Assembling has the machine gather inputs the human then interprets. Proposing has the machine generate options the human decides among. Monitoring has the machine watch signals the human will respond to. Coaching has the machine guide a process the human owns. Every point of machine contact inhabits one such pattern. The pattern determines what the interaction looks like; the tier determines how hard the machine presses; the band determines whether the machine is a suitable proposer at all. The three dimensions classify independently.
+
+One further restraint is structural. A practice architecture must not widen the specification medium's formal scope to cover domains it supports only agentically. The temptation to encode every practice concern into the specification language is itself a relocation risk: what begins as advice acquires the shape of enforcement, and the medium becomes a bureaucracy. The practice's discipline is to leave the medium narrow, and to carry its own work in its own surfaces, such as schedules, retrievals, subagents, and interaction patterns, without absorbing them into validators and concept types.
+
+This is the shape of a practice architecture that resists cosmetic relocation structurally: every point of machine contact declares its tier, band, and pattern; categorical exclusions are encoded as structural properties of feature design rather than runtime rules; and the medium's formal scope is not widened to absorb what the practice supports agentically. The medium provides the surface on which commitments are expressed. The practice provides the protocol by which commitments are actually made. Without the second, the first can be well-formed and hollow.
+
+ASAP (Architect Support Agentic Platform) is a concrete proposal for such an architecture, grounded in the BTABoK. It assigns every feature in its surface to a tier, a band, and a pattern, and declares stop-lines keyed to the roles BTABoK itself names. It operates across the full practice lifecycle without widening the specification medium's formal scope beyond what the medium already supports. Whether the classification holds under sustained practitioner load, and whether the agentic layer resists drifting back toward default machine inclusion, are the questions practice must answer.
+
+---
+
 ## Existing Traditions
 
 Several traditions contribute important primitives. None is sufficient alone.
@@ -171,19 +209,21 @@ SpecChat's design attempts the synthesis this section calls for: formal method r
 
 ## Research Agenda
 
-The enquiry identifies six problems that must be solved in sequence. SpecChat provides concrete proposals for several of them. None is fully resolved.
+The enquiry identifies seven problems that must be solved in sequence.
 
-**1. The developmental test.** Can specification struggle build durable FORCE in practitioners who have not first built implementation FORCE? This is empirical, not theoretical. It requires controlled comparison of specification-trained and implementation-trained cohorts on tasks that demand deep judgment. Without an answer here, the rest of the agenda rests on an untested assumption. SpecChat does not address this item. It remains the most important open question.
+**1. The developmental test.** Can specification struggle build durable FORCE in practitioners who have not first built implementation FORCE? This is empirical, not theoretical. It requires controlled comparison of specification-trained and implementation-trained cohorts on tasks that demand deep judgment. Without an answer here, the rest of the agenda rests on an untested assumption. No current work addresses this item. It remains the most important open question.
 
-**2. The minimal semantic kernel.** What meaning must be explicit in the specification medium? SpecChat proposes a concrete kernel: seven construct families (entities with contracts and invariants, components with topology, phases with gates, traces, constraints, package policies, platform realization), each with typed identity, rationale, and confidence signals. The research question shifts from "what must be explicit?" to "is this kernel sufficient, and is anything in it unnecessary?"
+**2. The minimal semantic kernel.** What meaning must be explicit in the specification medium? SpecChat proposes a concrete kernel: seven construct families (entities with contracts and invariants, components with topology, phases with gates, traces, constraints, package policies, platform realization), each with typed identity, rationale, and confidence signals. The question becomes whether this kernel is sufficient and whether any construct in it is unnecessary. A profile extending the kernel into the concepts and artifacts of enterprise architecture practice adds roughly nineteen typed objects and is currently testing the kernel's ability to absorb domains outside its original scope.
 
-**3. The refinement calculus.** What must be preserved when a specification is elaborated to a lower level of abstraction? SpecChat provides partial machinery: the `refines` construct links child specifications to parents, build phases with `gate` clauses impose proof obligations at each stage, and the Tracking block lifecycle gates each specification through a human-authorized state sequence. Formal refinement-preservation proofs do not yet exist. The calculus is convention-based, not formally verified.
+**3. The refinement calculus.** What must be preserved when a specification is elaborated to a lower level of abstraction? The `refines` construct links child specifications to parents. Build phases with `gate` clauses impose proof obligations at each stage. The Tracking lifecycle gates each specification through a human-authorized state sequence. Formal refinement-preservation proofs do not exist. The calculus is convention-based, not formally verified.
 
-**4. The human/LLM execution boundary.** What is the machine permitted to elaborate, and what remains exclusively human? SpecChat's authored/consumed distinction declares what the human builds and what is consumed from external sources. The Tracking lifecycle (Draft through Verified) requires human authorization at each state transition. Package policies govern what the LLM may introduce. These are structural enforcements, not formal proofs of boundary integrity.
+**4. The human/LLM execution boundary.** What is the machine permitted to elaborate, and what remains exclusively human? The authored/consumed distinction declares what the human builds and what is consumed from external sources. The Tracking lifecycle (Draft through Verified) requires human authorization at each state transition. Package policies govern what the LLM may introduce. These are structural enforcements, not formal proofs of boundary integrity.
 
-**5. The workspace model.** How are semantic objects edited, commented on, reused, branched, merged, checked, and projected into multiple views? SpecChat addresses several of these: the `.spec.md` file is edited in any text editor; prose sections alongside spec blocks serve as commentary; git provides branching, merging, and version history; the quality analyzer checks the specification; and projections generate code, tests, documentation, dependency graphs, and traceability matrices from the specification model. What remains unaddressed: there is no visual representation of the specification. SpecChat is text-native. Whether a visual layer is necessary or whether text with projections is sufficient is an open design question.
+**5. The practice architecture.** The execution boundary declares what the machine may touch. The practice architecture declares, for every decision in the specification lifecycle, whether the human must decide alone, must authorize a machine-checked result, must adjudicate a machine proposal, or may merely be informed of machine work completed within authored scope. ASAP proposes three orthogonal classification axes: a four-tier authority gradient (Enforce, Gate, Advise, Inform), a four-band AI-suitability classification (AI-strong, AI-backstage, AI-proposer, AI-excluded), and an interaction-pattern dimension that names the choreography of each machine contact (drafting, assembling, proposing, monitoring, coaching, and related patterns). Whether these classifications cover the full space of practitioner decisions, whether they can be applied consistently across the models of an architecture practice, and whether practitioners adopt them without drifting back toward default inclusion of the machine are open questions.
 
-**6. Validation at scale.** The discipline must survive actual system work: real scale, real ambiguity, real iteration, real machine execution pressure. SpecChat was derived from one real project (a Blazor WebAssembly visualization harness with 45 computations, 17 pages, and 225+ tests). That experience validated the construct families but does not constitute systematic validation. Broader evidence from multiple projects, teams, and domains is needed before the developmental and medium claims can be considered tested under production conditions.
+**6. The workspace model.** How are semantic objects edited, commented on, reused, branched, merged, checked, and projected into multiple views? The `.spec.md` file is edited in any text editor. Prose sections alongside spec blocks serve as commentary. Git provides branching, merging, and version history. A quality analyzer checks the specification. Projections generate code, tests, documentation, dependency graphs, and traceability matrices from the specification model. There is no visual representation of the specification. SpecChat is text-native. Whether a visual layer is necessary or whether text with projections is sufficient is an open design question.
+
+**7. Validation at scale.** The discipline must survive actual system work: real scale, real ambiguity, real iteration, real machine execution pressure. SpecChat was derived from one real project (a Blazor WebAssembly visualization harness with 45 computations, 17 pages, and 225+ tests). That experience validated the construct families but does not constitute systematic validation. Broader evidence from multiple projects, teams, and domains is needed before the developmental, medium, and practice claims can be considered tested under production conditions.
 
 ---
 
@@ -191,8 +231,8 @@ The enquiry identifies six problems that must be solved in sequence. SpecChat pr
 
 The future under discussion is already here. Humans can specify substantial systems well enough for LLMs to implement them. The LLM is becoming a realization engine: it consumes formal commitments and produces systems that conform to them. The practice is real. The question is whether the discipline around it can be made rigorous, and whether that rigor can serve as a genuine source of FORCE.
 
-This enquiry identifies what a formal specification medium would need to carry: typed identity, contracts, invariants, topology, refinement links, execution permissions, and verification obligations. It identifies the division of labor the medium must enforce: the human as author of commitments, the realization engine as executor within them. And it identifies the structural risk that threatens the entire arrangement: cosmetic relocation, in which the realization engine runs but the human is no longer doing the hard reasoning the specification purports to represent.
+A formal specification medium must carry typed identity, contracts, invariants, topology, refinement links, execution permissions, and verification obligations. SpecChat carries them. The medium enforces a division of labor: the human as author of commitments, the realization engine as executor within them. A practice architecture must enforce that division decision by decision. ASAP proposes one, through a classification of every machine contact by authority, suitability, and interaction pattern, and through categorical stop-lines the machine may not cross. One structural risk threatens the entire arrangement: cosmetic relocation, in which the realization engine runs but the human is no longer doing the hard reasoning the specification purports to represent. The medium resists it at the level of what a specification must contain. The practice resists it at the level of who decides what the specification should say.
 
-But the medium is not the deepest problem. The deepest problem is whether the shift from implementation struggle to specification struggle can preserve the developmental pipeline that builds strong engineers. The $\alpha S$ term needs a new source. Formal specification is a plausible candidate. The transition from one source to the other is the danger zone, and Eq. 14a warns that failure there is not easily reversed.
+Neither the medium nor the practice is the deepest problem. The deepest problem is whether the shift from implementation struggle to specification struggle can preserve the developmental pipeline that builds strong engineers. The $\alpha S$ term needs a new source. Formal specification is a plausible candidate. The transition from one source to the other is the danger zone, and Eq. 14a warns that failure there is not easily reversed.
 
-The realization engine exists. The commitment boundary can be drawn. Whether specification struggle can actually build what implementation struggle built is the empirical question that governs which future obtains.
+The realization engine exists. The commitment boundary has been drawn. The practice architecture has been proposed. Whether specification struggle can actually build what implementation struggle built is the empirical question that governs which future obtains.
