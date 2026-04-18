@@ -407,10 +407,13 @@ system AppEs {
         }
 
         authentication_pattern {
-            reference "Global-Corp-Platform-Implementation-Brief.md
+            reference "WIP/Archive/Global-Corp-Platform-Implementation-Brief.md
                        Section 7 (Authentication Pattern) and
                        Appendix B for the concrete OpenIddict
-                       server setup sketch.";
+                       server setup sketch. Brief is archived
+                       because its refactoring scope has been
+                       executed; the content remains the
+                       authoritative source for the auth pattern.";
             surface "AuthorizeEndpoint at connect/authorize,
                      TokenEndpoint at connect/token,
                      UserInfoEndpoint at connect/userinfo, all

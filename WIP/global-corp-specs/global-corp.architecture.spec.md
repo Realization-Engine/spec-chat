@@ -1671,7 +1671,7 @@ These specs are referenced throughout this base spec via weakRef and will be aut
 
 ### 17.4 Implementation guidance
 
-- Platform implementation brief: [Global-Corp-Platform-Implementation-Brief.md](../Global-Corp-Platform-Implementation-Brief.md)
+- Platform implementation brief (archived; scope executed): [Global-Corp-Platform-Implementation-Brief.md](../Archive/Global-Corp-Platform-Implementation-Brief.md)
 - Blazor WASM + SVG chart pattern reference: [blazor-harness.spec.md](../../Delivery/spec-chat/samples/blazor-harness.spec.md)
 - Gate simulator pattern reference: [PayGate.spec.md](../../src/MCPServer/DotNet/Docs/Specs/PayGate.spec.md)
 
