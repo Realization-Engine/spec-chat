@@ -40,27 +40,61 @@ jobs:
 
       - name: Build site
         run: |
-          mkdir -p site/docs site/css site/lib/katex/fonts
+          mkdir -p site/docs/theory site/docs/specification/extensions/the-standard
+          mkdir -p site/docs/examples/blazor-harness site/docs/examples/global-corp
+          mkdir -p site/css site/lib/katex/fonts
 
           # Copy static assets
-          cp static/css/docs.css site/css/
-          cp static/lib/katex/katex.min.css site/lib/katex/
-          cp static/lib/katex/katex.min.js site/lib/katex/
-          cp static/lib/katex/fonts/*.woff2 site/lib/katex/fonts/
+          cp docs/assets/css/docs.css site/css/
+          cp docs/assets/lib/katex/katex.min.css site/lib/katex/
+          cp docs/assets/lib/katex/katex.min.js site/lib/katex/
+          cp docs/assets/lib/katex/fonts/*.woff2 site/lib/katex/fonts/
 
-          # Convert docs to HTML
-          for md in Docs/*.md; do
-            filename=$(basename "$md" .md)
-            pandoc "$md" \
+          # Render a markdown file to HTML, preserving relative subpath under site/docs/
+          # Args: $1 = source md path (under docs/), $2 = relative depth for css/katex (e.g., ../.. for two levels deep)
+          render_md() {
+            local src="$1"
+            local depth="$2"
+            local rel="${src#docs/}"             # strip leading docs/
+            local out="site/docs/${rel%.md}.html"
+            mkdir -p "$(dirname "$out")"
+            pandoc "$src" \
               --standalone \
               --metadata title="" \
-              --css "../css/docs.css" \
-              --css "../lib/katex/katex.min.css" \
-              --katex="../lib/katex/" \
+              --css "${depth}/css/docs.css" \
+              --css "${depth}/lib/katex/katex.min.css" \
+              --katex="${depth}/lib/katex/" \
               --lua-filter=/tmp/mermaid.lua \
               --variable header-includes='<script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";mermaid.initialize({startOnLoad:true});</script>' \
-              -o "site/docs/${filename}.html"
+              -o "$out"
+          }
+
+          # Publish: theory (depth ../..)
+          for md in docs/theory/*.md; do
+            render_md "$md" "../.."
           done
+
+          # Publish: specification root (depth ../..)
+          for md in docs/specification/*.md; do
+            render_md "$md" "../.."
+          done
+
+          # Publish: specification/extensions/the-standard (depth ../../../..)
+          for md in docs/specification/extensions/the-standard/*.md; do
+            render_md "$md" "../../../.."
+          done
+
+          # Publish: examples/blazor-harness (depth ../../..)
+          for md in docs/examples/blazor-harness/*.md; do
+            render_md "$md" "../../.."
+          done
+
+          # Publish: examples/global-corp (depth ../../..)
+          for md in docs/examples/global-corp/*.md; do
+            render_md "$md" "../../.."
+          done
+
+          # NOTE: docs/design-notes/ is intentionally not published. It is repo-only.
 
           # Add .nojekyll
           touch site/.nojekyll
@@ -78,24 +112,68 @@ jobs:
           </head>
           <body>
             <h1>SpecChat Documentation</h1>
+
+            <h2>Theory</h2>
             <ul class="doc-list">
               <li>
-                <a href="Enquiry-Into-Specification-as-Meaningful-Struggle.html">Enquiry Into Specification as Meaningful Struggle</a>
+                <a href="theory/Enquiry-Into-Specification-as-Meaningful-Struggle.html">Enquiry Into Specification as Meaningful Struggle</a>
                 <p>Why specification is the site where durable human capability must now be built, and what the specification medium must carry.</p>
               </li>
               <li>
-                <a href="Enquiry-Into-Specification-as-Meaningful-Struggle_Citations.html">Citations and References</a>
+                <a href="theory/Enquiry-Into-Specification-as-Meaningful-Struggle_Citations.html">Citations and references</a>
                 <p>Supporting citations for the Enquiry.</p>
               </li>
             </ul>
+
+            <h2>Specification</h2>
+            <ul class="doc-list">
+              <li>
+                <a href="specification/SpecChat-Overview.html">SpecChat Overview</a>
+                <p>Motivation, design rationale, and overview of the SpecChat system.</p>
+              </li>
+              <li>
+                <a href="specification/SpecLang-Specification.html">SpecLang Specification</a>
+                <p>Language definition: constructs, semantics, the five registers of specification.</p>
+              </li>
+              <li>
+                <a href="specification/SpecLang-Grammar.html">SpecLang Grammar</a>
+                <p>Formal EBNF grammar: lexer tokens, productions, ambiguity resolution.</p>
+              </li>
+              <li>
+                <a href="specification/extensions/the-standard/TheStandard-Extension-Overview.html">The Standard Extension &mdash; Overview</a>
+                <p>Opt-in extension that encodes the architectural rules of Hassan Habib's <em>The Standard</em>.</p>
+              </li>
+              <li>
+                <a href="specification/extensions/the-standard/TheStandard-Extension-Specification.html">The Standard Extension &mdash; Specification</a>
+              </li>
+              <li>
+                <a href="specification/extensions/the-standard/TheStandard-Extension-Grammar.html">The Standard Extension &mdash; Grammar</a>
+              </li>
+            </ul>
+
+            <h2>Examples</h2>
+            <ul class="doc-list">
+              <li>
+                <a href="examples/blazor-harness/blazor-harness.spec.html">Blazor Harness &mdash; system spec</a>
+                <a href="examples/blazor-harness/blazor-harness.manifest.html">manifest</a>
+                <p>Canonical small sample: a Blazor analytics harness, complete in two files.</p>
+              </li>
+              <li>
+                <a href="examples/global-corp/global-corp.architecture.spec.html">Global Corp &mdash; architecture spec</a>
+                <a href="examples/global-corp/global-corp.manifest.html">manifest</a>
+                <p>Scale exemplar: a multi-application enterprise system specified across ~22 files. The architecture spec and manifest are the entry points; the directory contains the full set.</p>
+              </li>
+            </ul>
+
             <h2>Related</h2>
             <ul class="doc-list">
               <li>
-                <a href="https://realization-engine.github.io/fstar/docs/The_Multiplier_and_the_Mirror.html">The Multiplier and the Mirror</a>
+                <a href="https://realizationengine.net/fstar/docs/The_Multiplier_and_the_Mirror.html">The Multiplier and the Mirror</a>
                 <p>The parent paper: formal foundations for specification as meaningful struggle.</p>
               </li>
             </ul>
-            <a class="back-link" href="https://github.com/realization-engine/spec-chat">Back to Repository</a>
+
+            <a class="back-link" href="https://github.com/realization-engine/spec-chat">Back to repository</a>
           </body>
           </html>
           HTMLEOF
