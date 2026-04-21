@@ -46,11 +46,12 @@ jobs:
 
           # Copy static assets
           cp docs/assets/css/docs.css site/css/
+          cp docs/assets/css/paper.css site/css/
           cp docs/assets/lib/katex/katex.min.css site/lib/katex/
           cp docs/assets/lib/katex/katex.min.js site/lib/katex/
           cp docs/assets/lib/katex/fonts/*.woff2 site/lib/katex/fonts/
 
-          # Render a markdown file to HTML, preserving relative subpath under site/docs/
+          # Render a reference-style markdown file (sans-serif docs.css).
           # Args: $1 = source md path (under docs/), $2 = relative depth for css/katex (e.g., ../.. for two levels deep)
           render_md() {
             local src="$1"
@@ -69,9 +70,28 @@ jobs:
               -o "$out"
           }
 
-          # Publish: theory (depth ../..)
+          # Render a literary-journal paper (variant-B template, paper.css).
+          # Reads paper metadata (title, author, version, etc.) from YAML frontmatter.
+          render_paper() {
+            local src="$1"
+            local depth="$2"
+            local rel="${src#docs/}"
+            local out="site/docs/${rel%.md}.html"
+            mkdir -p "$(dirname "$out")"
+            pandoc "$src" \
+              --standalone \
+              --template=docs/assets/template.html \
+              --css "${depth}/css/paper.css" \
+              --css "${depth}/lib/katex/katex.min.css" \
+              --katex="${depth}/lib/katex/" \
+              --lua-filter=/tmp/mermaid.lua \
+              --variable header-includes='<script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";mermaid.initialize({startOnLoad:true});</script>' \
+              -o "$out"
+          }
+
+          # Publish: theory as papers (depth ../..)
           for md in docs/theory/*.md; do
-            render_md "$md" "../.."
+            render_paper "$md" "../.."
           done
 
           # Publish: specification root (depth ../..)

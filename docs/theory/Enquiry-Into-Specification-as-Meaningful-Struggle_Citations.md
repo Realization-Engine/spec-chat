@@ -1,8 +1,13 @@
-# References for "Enquiry Into Specification as Meaningful Struggle"
-
-*Supporting citations for the memorandum by Dennis A. Landi.*
-*Compiled 2026-03-26. Updated 2026-04-04 to reflect the v0.06 memorandum and SpecChat. Updated 2026-04-18 to reflect the v0.09 memorandum and ASAP.*
-
+---
+title: "Citations for *Enquiry Into Specification as Meaningful Struggle*"
+subtitle: "Supporting citations for the memorandum, updated alongside its versions."
+author: "Dennis A. Landi"
+version: "0.09"
+date: "2026-04-18"
+category: "Citations"
+folio: "№ III · a"
+project: "Spec Chat"
+source: "https://github.com/Realization-Engine/spec-chat"
 ---
 
 ## Editorial Note
