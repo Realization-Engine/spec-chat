@@ -98,7 +98,7 @@ The repository organizes content into a single `docs/` tree for reading material
 | `docs/specification/SpecLang-Grammar.md` | Formal EBNF grammar: lexer tokens, productions, ambiguity resolution |
 | `docs/specification/extensions/the-standard/` | The Standard extension: overview, specification, grammar |
 | `docs/examples/blazor-harness/` | Canonical sample (small, complete): manifest and system spec for a Blazor analytics harness |
-| `docs/examples/global-corp/` | Scale exemplar (~22 specs) demonstrating SpecLang on a multi-application enterprise system |
+| `docs/examples/global-corp/` | Scale exemplar: a fictional BTABOK-complete enterprise (Global Corp Inc.) shown both as a [narrative architecture document](docs/examples/global-corp/Global-Corp-Exemplar.md) and as the corresponding spec collection (~22 files) |
 | `docs/design-notes/` | Internal design records, type system, versioning policy, decision log. Repo-only, not published to the website |
 | `docs/design-notes/btabok/` | BTABOK integration material (out-of-scope models, glossary, implementation plan, exemplar essay). Repo-only |
 | `docs/assets/` | CSS and KaTeX assets used by the published documentation site |
@@ -115,7 +115,7 @@ The repository organizes content into a single `docs/` tree for reading material
 3. The [SpecChat Overview](docs/specification/SpecChat-Overview.md) for how the system is put together.
 4. The [SpecLang Specification](docs/specification/SpecLang-Specification.md) and [Grammar](docs/specification/SpecLang-Grammar.md) for the full language definition.
 5. The [Blazor Harness sample](docs/examples/blazor-harness/blazor-harness.spec.md) (and its [manifest](docs/examples/blazor-harness/blazor-harness.manifest.md)) for a small concrete example.
-6. The [Global Corp exemplar](docs/examples/global-corp/) for SpecLang at scale.
+6. The [Global Corp exemplar](docs/examples/global-corp/Global-Corp-Exemplar.md) for SpecLang at scale (narrative document, paired with the formal spec collection in the same directory).
 
 ## Installation
 

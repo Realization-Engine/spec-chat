@@ -159,9 +159,12 @@ jobs:
                 <p>Canonical small sample: a Blazor analytics harness, complete in two files.</p>
               </li>
               <li>
-                <a href="examples/global-corp/global-corp.architecture.spec.html">Global Corp &mdash; architecture spec</a>
+                <a href="examples/global-corp/Global-Corp-Exemplar.html">Global Corp &mdash; narrative architecture document</a>
+                &middot;
+                <a href="examples/global-corp/global-corp.architecture.spec.html">architecture spec</a>
+                &middot;
                 <a href="examples/global-corp/global-corp.manifest.html">manifest</a>
-                <p>Scale exemplar: a multi-application enterprise system specified across ~22 files. The architecture spec and manifest are the entry points; the directory contains the full set.</p>
+                <p>Scale exemplar: a fictional BTABOK-complete enterprise (Global Corp Inc.) shown both as a long-form narrative architecture document and as the corresponding spec collection (~22 files). The narrative is the human entry point; the spec files are authoritative.</p>
               </li>
             </ul>
 
