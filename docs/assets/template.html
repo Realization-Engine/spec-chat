@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="$lang$$if(lang)$$else$en$endif$" data-theme="auto">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>$if(pagetitle)$$pagetitle$$else$$title-meta$$endif$</title>
+$if(author-meta)$<meta name="author" content="$author-meta$" />$endif$
+$if(date-meta)$<meta name="dcterms.date" content="$date-meta$" />$endif$
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,500;1,8..60,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+$for(css)$<link rel="stylesheet" href="$css$" />
+$endfor$
+$if(math)$
+$math$
+$endif$
+$for(header-includes)$$header-includes$
+$endfor$
+</head>
+<body>
+
+<div class="theme-toggle" role="group" aria-label="Theme">
+  <button type="button" data-theme-btn="auto" aria-pressed="true">Auto</button>
+  <button type="button" data-theme-btn="light" aria-pressed="false">Light</button>
+  <button type="button" data-theme-btn="dark" aria-pressed="false">Dark</button>
+</div>
+
+<div class="page">
+
+  <div class="topbar">
+    <div class="left"><a href="https://realizationengine.net/">Realization Engine · realizationengine.net</a></div>
+    <div class="mid">$if(category)$$category$$if(folio)$ · $folio$$endif$$else$A program of research &amp; writing$endif$</div>
+    <div class="right">$if(version)$Version $version$$endif$$if(date)$$if(version)$ · $endif$$date$$endif$</div>
+  </div>
+
+  <header class="banner">
+    <h1 class="paper-title">$title$</h1>
+    $if(subtitle)$
+    <div class="subline">
+      <p class="tag">$subtitle$</p>
+      <div class="meta">
+        $if(author)$<span>$author$</span>$endif$
+        $if(date)$<span>$date$</span>$endif$
+      </div>
+    </div>
+    $endif$
+  </header>
+
+  <article class="paper">
+$body$
+  </article>
+
+  <section class="colophon-bar" aria-label="Colophon">
+    <div>
+      <h4>About</h4>
+      <p class="about">This paper is part of the Realization Engine, a program of research and writing collected at <a href="https://realizationengine.net/">realizationengine.net</a>.</p>
+    </div>
+    <div>
+      <h4>Colophon</h4>
+      <dl>
+        <dt>Set in</dt><dd>Source Serif 4 · JetBrains Mono</dd>
+        $if(author)$<dt>Author</dt><dd>$author$</dd>$endif$
+        $if(version)$<dt>Version</dt><dd>$version$</dd>$endif$
+        $if(date)$<dt>Date</dt><dd>$date$</dd>$endif$
+        $if(category)$<dt>Category</dt><dd>$category$</dd>$endif$
+        <dt>Licence</dt><dd>CC BY 4.0 · MIT (code)</dd>
+        $if(source)$<dt>Source</dt><dd><a href="$source$">$source$</a></dd>$endif$
+      </dl>
+    </div>
+  </section>
+
+  <div class="foot">
+    <div>© Realization Engine · Vol. I</div>
+    <div><a href="https://github.com/Realization-Engine">Org · github.com/Realization-Engine</a></div>
+  </div>
+
+</div>
+
+<script>
+  (function () {
+    const root = document.documentElement;
+    const key = 're.theme';
+    const saved = localStorage.getItem(key) || 'auto';
+    const apply = (v) => {
+      root.setAttribute('data-theme', v);
+      document.querySelectorAll('[data-theme-btn]').forEach(b => {
+        b.setAttribute('aria-pressed', String(b.dataset.themeBtn === v));
+      });
+    };
+    apply(saved);
+    document.querySelectorAll('[data-theme-btn]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const v = btn.dataset.themeBtn;
+        localStorage.setItem(key, v);
+        apply(v);
+      });
+    });
+  })();
+</script>
+
+</body>
+</html>

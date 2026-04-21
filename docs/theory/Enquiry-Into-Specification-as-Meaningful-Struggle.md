@@ -1,10 +1,13 @@
-# Enquiry Into Specification as Meaningful Struggle
-
-*A companion memorandum to [The Multiplier and the Mirror](https://realization-engine.github.io/fstar/docs/The_Multiplier_and_the_Mirror.html)*
-
-**Author:** Dennis A. Landi
-**Version:** 0.09
-
+---
+title: "Enquiry Into Specification as *Meaningful Struggle*"
+subtitle: "A companion memorandum to [The Multiplier and the Mirror](https://realizationengine.net/fstar/docs/The_Multiplier_and_the_Mirror.html), on specification as the site where durable human capability must now be built."
+author: "Dennis A. Landi"
+version: "0.09"
+date: "2026-04-18"
+category: "Companion Memorandum"
+folio: "№ III"
+project: "Spec Chat"
+source: "https://github.com/Realization-Engine/spec-chat"
 ---
 
 ## The FORCE Problem
