@@ -12,7 +12,7 @@ LLMs are absorbing implementation work. As that happens, the human's value migra
 
 Meaning is present but distributed. Refinement happens but implicitly. Cross-view consistency is possible but brittle. The effort goes into keeping documents consistent and re-explaining context, not into reasoning about systems. A formal specification medium is needed: one where the specifier's struggle is system reasoning, not medium management.
 
-The full argument for why specification is the site where durable human capability must now be built, and why the medium matters for that, is in the companion whitepaper: [Enquiry Into Specification as Meaningful Struggle](Docs/Enquiry-Into-Specification-as-Meaningful-Struggle.md).
+The full argument for why specification is the site where durable human capability must now be built, and why the medium matters for that, is in the companion whitepaper: [Enquiry Into Specification as Meaningful Struggle](docs/theory/Enquiry-Into-Specification-as-Meaningful-Struggle.md).
 
 ## What SpecChat Is
 
@@ -22,7 +22,7 @@ The division of labor is explicit. The human authors commitments: abstractions, 
 
 SpecChat organizes around four layers:
 
-1. **Language definition.** Two files define what SpecLang constructs exist and how to parse them: the [SpecLang Specification](Delivery/spec-chat/SpecLang-Specification.md) and the [SpecLang Grammar](Delivery/spec-chat/SpecLang-Grammar.md).
+1. **Language definition.** Two files define what SpecLang constructs exist and how to parse them: the [SpecLang Specification](docs/specification/SpecLang-Specification.md) and the [SpecLang Grammar](docs/specification/SpecLang-Grammar.md).
 
 2. **System specification.** A base `.spec.md` file declares a specific system: its components, their topology, build phases with gate conditions, data entities, page declarations, and traceability mappings.
 
@@ -76,7 +76,7 @@ Analyst -> AnalyticsDashboard : "Reviews revenue dashboards.";
 
 **Design specification** defines what users see and interact with: pages, visualizations, parameter bindings, layout intent, and behavioral commitments. Prose intent is architecturally associated with formal declarations, so the LLM receives both during realization.
 
-The full language definition is in the [SpecLang Specification](Delivery/spec-chat/SpecLang-Specification.md). The formal EBNF grammar is in the [SpecLang Grammar](Delivery/spec-chat/SpecLang-Grammar.md).
+The full language definition is in the [SpecLang Specification](docs/specification/SpecLang-Specification.md). The formal EBNF grammar is in the [SpecLang Grammar](docs/specification/SpecLang-Grammar.md).
 
 ## The Standard Extension
 
@@ -84,26 +84,38 @@ An opt-in extension allows specifications to encode the architectural rules of H
 
 The extension is activated by an `architecture TheStandard` declaration in the base system spec. When absent, the base language operates unchanged.
 
-See the [Extension Overview](Delivery/spec-chat/extensions/the-standard/TheStandard-Extension-Overview.md) for full details.
+See the [Extension Overview](docs/specification/extensions/the-standard/TheStandard-Extension-Overview.md) for full details.
 
 ## Repository Layout
 
+The repository organizes content into a single `docs/` tree for reading material, a `src/` tree for code, and supporting directories for tests, templates, and archived material.
+
 | Path | Description |
 |---|---|
-| `Docs/` | Whitepaper and citations |
-| `Delivery/spec-chat/SpecChat-Overview.md` | Motivation, design rationale, and overview of the SpecChat system |
-| `Delivery/spec-chat/SpecLang-Specification.md` | Language definition: constructs, semantics, five registers of specification |
-| `Delivery/spec-chat/SpecLang-Grammar.md` | Formal EBNF grammar: lexer tokens, productions, ambiguity resolution |
-| `Delivery/spec-chat/samples/` | Sample manifest and system spec (Blazor analytics harness) |
-| `Delivery/spec-chat/extensions/the-standard/` | The Standard extension: overview, specification, grammar |
+| `docs/theory/` | Whitepaper (*Enquiry Into Specification as Meaningful Struggle*) and citations |
+| `docs/specification/SpecChat-Overview.md` | Motivation, design rationale, and overview of the SpecChat system |
+| `docs/specification/SpecLang-Specification.md` | Language definition: constructs, semantics, five registers of specification |
+| `docs/specification/SpecLang-Grammar.md` | Formal EBNF grammar: lexer tokens, productions, ambiguity resolution |
+| `docs/specification/extensions/the-standard/` | The Standard extension: overview, specification, grammar |
+| `docs/examples/blazor-harness/` | Canonical sample (small, complete): manifest and system spec for a Blazor analytics harness |
+| `docs/examples/global-corp/` | Scale exemplar (~22 specs) demonstrating SpecLang on a multi-application enterprise system |
+| `docs/design-notes/` | Internal design records, type system, versioning policy, decision log. Repo-only, not published to the website |
+| `docs/design-notes/btabok/` | BTABOK integration material (out-of-scope models, glossary, implementation plan, exemplar essay). Repo-only |
+| `docs/assets/` | CSS and KaTeX assets used by the published documentation site |
+| `src/MCPServer/DotNet/` | SpecChat MCP server and Language SDK (.NET 10) |
+| `src/MCPServer/DotNet/examples/` | Example specs the .NET tooling exercises (PayGate, PizzaShop, SendGate, TodoApp) |
+| `tests/fixtures/` | Developer-facing test specs, including failure-mode fixtures |
+| `templates/copilot/` | Workspace template for VS Code + GitHub Copilot users |
+| `archive/` | Retired design material, kept for provenance |
 
 ## Where to Start
 
 1. This README for orientation.
-2. The [Enquiry](Docs/Enquiry-Into-Specification-as-Meaningful-Struggle.md) for the theoretical foundation: why specification, why a formal medium, what the realization engine concept means.
-3. The [SpecChat Overview](Delivery/spec-chat/SpecChat-Overview.md) for how the system is put together.
-4. The [SpecLang Specification](Delivery/spec-chat/SpecLang-Specification.md) and [Grammar](Delivery/spec-chat/SpecLang-Grammar.md) for the full language definition.
-5. The [sample system spec](Delivery/spec-chat/samples/blazor-harness.spec.md) and [manifest](Delivery/spec-chat/samples/blazor-harness.manifest.md) for a concrete example.
+2. The [Enquiry](docs/theory/Enquiry-Into-Specification-as-Meaningful-Struggle.md) for the theoretical foundation: why specification, why a formal medium, what the realization engine concept means.
+3. The [SpecChat Overview](docs/specification/SpecChat-Overview.md) for how the system is put together.
+4. The [SpecLang Specification](docs/specification/SpecLang-Specification.md) and [Grammar](docs/specification/SpecLang-Grammar.md) for the full language definition.
+5. The [Blazor Harness sample](docs/examples/blazor-harness/blazor-harness.spec.md) (and its [manifest](docs/examples/blazor-harness/blazor-harness.manifest.md)) for a small concrete example.
+6. The [Global Corp exemplar](docs/examples/global-corp/) for SpecLang at scale.
 
 ## Installation
 
@@ -111,27 +123,27 @@ There are two ways to use SpecChat: as context files for Claude Code, or as an M
 
 ### Claude Code
 
-Copy the `Delivery/spec-chat/` folder from this repository into your Claude Code configuration directory:
+The Claude Code install bundle is assembled from two locations in this repository: the language definition under `docs/specification/` and the canonical sample under `docs/examples/blazor-harness/`. Copy them into your Claude Code configuration directory under a single `spec-chat/` folder:
 
 | Platform | Destination |
 |---|---|
 | macOS / Linux | `~/.claude/spec-chat/` |
 | Windows | `%USERPROFILE%\.claude\spec-chat\` |
 
-After copying, your `.claude/` directory should contain:
+The destination should look like this once both copies are complete (note that `blazor-harness/` from `docs/examples/` is renamed to `samples/` to match the layout Claude Code expects):
 
 ```
 .claude/
   spec-chat/
-    SpecChat-Overview.md
-    SpecLang-Specification.md
-    SpecLang-Grammar.md
+    SpecChat-Overview.md           ← from docs/specification/
+    SpecLang-Specification.md      ← from docs/specification/
+    SpecLang-Grammar.md            ← from docs/specification/
     extensions/
-      the-standard/
+      the-standard/                ← from docs/specification/extensions/
         TheStandard-Extension-Overview.md
         TheStandard-Extension-Specification.md
         TheStandard-Extension-Grammar.md
-    samples/
+    samples/                       ← from docs/examples/blazor-harness/ (renamed)
       blazor-harness.manifest.md
       blazor-harness.spec.md
 ```
