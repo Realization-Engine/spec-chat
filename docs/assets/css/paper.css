@@ -1,8 +1,8 @@
 /* Realization Engine — paper stylesheet (variant-B aligned) */
 
 :root {
-  --paper: #fbf9f4;
-  --paper-2: #f4f0e7;
+  --paper: #fdfcf8;
+  --paper-2: #f7f3ea;
   --ink: #18140f;
   --ink-2: #3a3226;
   --ink-3: #756a58;
@@ -23,7 +23,7 @@
   }
 }
 html[data-theme="light"] {
-  --paper: #fbf9f4; --paper-2: #f4f0e7;
+  --paper: #fdfcf8; --paper-2: #f7f3ea;
   --ink: #18140f; --ink-2: #3a3226; --ink-3: #756a58;
   --rule: #18140f; --rule-faint: rgba(24, 20, 15, 0.16);
 }
