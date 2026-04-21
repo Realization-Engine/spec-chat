@@ -5,7 +5,7 @@
 
 **This document is a narrative design artifact, not a SpecChat spec collection.** The data it enumerates (personas, ASRs, ASDs, waivers, viewpoints, views, entities, contracts, invariants, metrics, and the rest) describes what a BTABOK-complete enterprise architecture looks like, but is not itself in a form that SpecChat validators can process.
 
-The actual spec collection derived from this narrative lives in `WIP/global-corp-specs/` (and will eventually move to `samples/global-corp/` once Phase 2c of the implementation plan ships, per [SpecChat-BTABOK-Implementation-Plan.md](SpecChat-BTABOK-Implementation-Plan.md) Section 7.3). Once the spec collection exists, **the spec files are authoritative** for all cross-references, counts, and IDs. This narrative remains as human-readable context and fiction backstory.
+The actual spec collection derived from this narrative lives alongside this document in the same directory (`docs/examples/global-corp/`). The spec files are authoritative for all cross-references, counts, and IDs. This narrative remains as human-readable context and fiction backstory. For background on the staging plan that produced this layout, see [SpecChat-BTABOK-Implementation-Plan.md](https://github.com/Realization-Engine/spec-chat/blob/main/docs/design-notes/btabok/SpecChat-BTABOK-Implementation-Plan.md) Section 7.3.
 
 Users looking to run SpecChat validators against Global Corp should point the tooling at the spec collection, not at this document.
 
@@ -53,7 +53,7 @@ Every artifact in this document carries a stable, human-readable identifier, a n
 
 This document is designed as a BTABOK-complete exemplar. Following the April 2026 publication of the Concept Definition Language (CoDL) and Canvas Definition Language (CaDL) by IASA Global on the BTABoK 3.2 education portal, it also doubles as a seed for CoDL concept instances and CaDL canvas definitions.
 
-A subsequent decision recorded in `WIP/SpecLang-Design.md` (Option X) absorbs specific infrastructure concerns into Core SpecLang. As a consequence of that decision, several conventions used throughout this document are no longer BTABOK-profile-specific; they are Core SpecLang features that apply to every spec collection regardless of profile.
+A subsequent decision recorded in [SpecLang-Design.md](https://github.com/Realization-Engine/spec-chat/blob/main/docs/design-notes/SpecLang-Design.md) (Option X) absorbs specific infrastructure concerns into Core SpecLang. As a consequence of that decision, several conventions used throughout this document are no longer BTABOK-profile-specific; they are Core SpecLang features that apply to every spec collection regardless of profile.
 
 The stable IDs used throughout this document (ASR-01, ASD-01, WVR-01, STK-01, VP-01, V-01, and so on) correspond to the Core SpecLang `slug` field. The first column of each artifact table therefore maps to the Core SpecItem metadata profile field `slug` (URL-safe stable identifier). Slug uniqueness and format rules are enforced by core validators and apply to every SpecChat collection.
 
@@ -65,7 +65,7 @@ The BTABOK profile contributes on top of the core infrastructure: the 19 BTABOK 
 
 The View Gallery in section 28 serves as a catalog of CaDL canvases defined over the document's concepts. Following the governing CaDL principle that "a canvas is a view of a concept, not a separate stored object type," each V-xx entry describes a rendering over concepts defined elsewhere in this document, not a new stored object.
 
-For the full alignment between CoDL, CaDL, and the SpecLang/SpecChat vocabulary, and for the Core SpecLang absorption decision, see `WIP/SpecLang-Design.md`. Two architectural decisions recorded there are relevant here: Option A (CoDL syntax is canonical, with optional SpecLang-style aliases) and Option X (infrastructure concerns absorbed into Core SpecLang).
+For the full alignment between CoDL, CaDL, and the SpecLang/SpecChat vocabulary, and for the Core SpecLang absorption decision, see [SpecLang-Design.md](https://github.com/Realization-Engine/spec-chat/blob/main/docs/design-notes/SpecLang-Design.md). Two architectural decisions recorded there are relevant here: Option A (CoDL syntax is canonical, with optional SpecLang-style aliases) and Option X (infrastructure concerns absorbed into Core SpecLang).
 
 ## 2. Design Intent
 
@@ -1589,14 +1589,14 @@ https://www.nist.gov/publications/nist-cybersecurity-framework-20-quick-start-gu
 https://www.iso.org/standard/79612.html
 
 ### Prior workspace learning
-**[R14]** BTABOK and SpecChat Alignment Report, workspace source file `WIP/Archive/BTA-BOK-integration.md`, dated 2026-04-16. The original broad-scope gap analysis, preserved for provenance.
+**[R14]** BTABOK and SpecChat Alignment Report, repository source [`archive/BTA-BOK-integration.md`](https://github.com/Realization-Engine/spec-chat/blob/main/archive/BTA-BOK-integration.md), dated 2026-04-16. The original broad-scope gap analysis, preserved for provenance.
 
 ### CoDL and CaDL (authoritative)
 **[R15]** Preiss, Paul. Structured Concept Definition Language. BTABoK 3.2, IASA Global Education Portal (2026).
 
-**[R16]** WIP workspace: `SpecLang-Design.md`. The consolidated design covering Core SpecLang, the BTABOK profile, CoDL and CaDL alignment, and the Engagement Model scope. It records both the Option A decision (CoDL syntax canonical) and the Option X decision (infrastructure absorption into Core SpecLang). It supersedes and incorporates the prior CoDL-CaDL-Integration-Notes.md, Core-SpecLang-Absorption-Design.md, BTABOK-Profile-v0.1-Design.md, and BTABOK-EngagementModel-Mapping.md (all now in `WIP/Archive/`).
+**[R16]** Repository: [`docs/design-notes/SpecLang-Design.md`](https://github.com/Realization-Engine/spec-chat/blob/main/docs/design-notes/SpecLang-Design.md). The consolidated design covering Core SpecLang, the BTABOK profile, CoDL and CaDL alignment, and the Engagement Model scope. It records both the Option A decision (CoDL syntax canonical) and the Option X decision (infrastructure absorption into Core SpecLang). It supersedes and incorporates the prior CoDL-CaDL-Integration-Notes.md, Core-SpecLang-Absorption-Design.md, BTABOK-Profile-v0.1-Design.md, and BTABOK-EngagementModel-Mapping.md (all now in [`archive/`](https://github.com/Realization-Engine/spec-chat/tree/main/archive)).
 
-**[R17]** WIP workspace: `Spec-Type-System.md`. Consolidated design covering the spec type taxonomy, rationale, and validation architecture.
+**[R17]** Repository: [`docs/design-notes/Spec-Type-System.md`](https://github.com/Realization-Engine/spec-chat/blob/main/docs/design-notes/Spec-Type-System.md). Consolidated design covering the spec type taxonomy, rationale, and validation architecture.
 
 ---
 
@@ -1648,7 +1648,7 @@ All references use the stable human-readable IDs introduced in this document (AS
 
 ## Appendix C. Scope Mapping: BTABOK Engagement Model vs. Out-of-Scope Models
 
-Per the SpecChat BTABOK integration scope decision (see `WIP/SpecLang-Design.md` Section 7), only the Engagement Model is mapped to SpecChat. This appendix declares which sections of this document feed Engagement Model specs and which are enterprise context that would not be expressed as SpecChat artifacts.
+Per the SpecChat BTABOK integration scope decision (see [SpecLang-Design.md](https://github.com/Realization-Engine/spec-chat/blob/main/docs/design-notes/SpecLang-Design.md) Section 7), only the Engagement Model is mapped to SpecChat. This appendix declares which sections of this document feed Engagement Model specs and which are enterprise context that would not be expressed as SpecChat artifacts.
 
 | Section | Content | SpecChat EM extraction | Notes |
 |---|---|---|---|
