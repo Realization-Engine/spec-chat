@@ -179,12 +179,12 @@ jobs:
                 <p>Canonical small sample: a Blazor analytics harness, complete in two files.</p>
               </li>
               <li>
-                <a href="examples/global-corp/Global-Corp-Exemplar.html">Global Corp &mdash; narrative architecture document</a>
-                &middot;
-                <a href="examples/global-corp/global-corp.architecture.spec.html">architecture spec</a>
+                <a href="examples/global-corp/global-corp.architecture.spec.html">Global Corp &mdash; architecture spec</a>
                 &middot;
                 <a href="examples/global-corp/global-corp.manifest.html">manifest</a>
-                <p>Scale exemplar: a fictional BTABOK-complete enterprise (Global Corp Inc.) shown both as a long-form narrative architecture document and as the corresponding spec collection (~22 files). The narrative is the human entry point; the spec files are authoritative.</p>
+                &middot;
+                <a href="https://realizationengine.net/asap/docs/examples/global-corp/Global-Corp-Exemplar.html">narrative document</a>
+                <p>Scale exemplar: a fictional BTABOK-complete enterprise (Global Corp Inc.). The spec collection here (~22 files) is authoritative for all cross-references, counts, and IDs, and is exercised by SpecChat validators end-to-end. The long-form narrative that describes what Global Corp is as an enterprise lives in the sibling <a href="https://github.com/Realization-Engine/asap">ASAP repository</a>, because <em>The Architect and the Agent</em> (folio Nº IV) treats it as the worked enterprise for the practice architecture derivation.</p>
               </li>
             </ul>
 
