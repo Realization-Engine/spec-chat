@@ -10,6 +10,8 @@ project: "Spec Chat"
 source: "https://github.com/Realization-Engine/spec-chat"
 ---
 
+This memorandum instantiates the **Multiplier-Mirror framework** (Folio Nº II, *The Multiplier and the Mirror*) at the specification medium for the software engineer. Subsequent references to "the framework" point to that parent work.
+
 ## The FORCE Problem
 
 The canonical FORCE dynamics equation from [The Multiplier and the Mirror](https://realization-engine.github.io/fstar/docs/The_Multiplier_and_the_Mirror.html) (Eq. 11) states:

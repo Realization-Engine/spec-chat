@@ -12,6 +12,8 @@ source: "https://github.com/Realization-Engine/spec-chat"
 
 ## Editorial Note
 
+This document supports the memorandum that instantiates the **Multiplier-Mirror framework** (Folio Nº II) at the specification medium.
+
 This revision follows the structure of the current memorandum (v0.09).
 
 Earlier versions cast a wide net across many adjacent traditions. This version keeps only the citation categories that directly support the paper’s argument:
